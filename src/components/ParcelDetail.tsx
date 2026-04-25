@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Droplets, Calendar, Satellite, Share2, CloudRain, Loader2, Trash2, Gauge, Pencil, Save, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,6 +125,7 @@ function MockForecastChart({ data, areaHectares }: { data: MockParcel["forecast"
 }
 
 export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false, soilLoading = false, soilError = null, onEditDetails, onRetrySoil }: ParcelDetailProps) {
+  const { t } = useTranslation();
   // Prefer live data when present; otherwise fall back to whatever was on the parcel.
   const ndmi = liveData?.ndmi ?? parcel.ndmi;
   const ndvi = liveData?.ndvi ?? parcel.ndvi;
@@ -144,9 +146,9 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
     const text = `HydroLand препоръчва: Полей нива '${parcel.name}' с ${shareM3} м³ тази седмица (статус: ${status.label.toLowerCase()}). Анализирано от ${sourceLbl}.`;
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Препоръката е копирана");
+      toast.success(t("parcelDetail.shareCopied"));
     } catch {
-      toast.error("Неуспешно копиране");
+      toast.error(t("parcelDetail.shareFailed"));
     }
   };
 
@@ -170,34 +172,34 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
                   size="icon"
                   className="h-7 w-7"
                   onClick={onEditDetails}
-                  aria-label="Редактирай парцела"
-                  title="Редактирай парцела"
+                  aria-label={t("parcelDetail.edit")}
+                  title={t("parcelDetail.edit")}
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
             <div className="mt-1 text-sm text-muted-foreground">
-              {CROP_LABELS[parcel.crop_type]} ·{" "}
+              {t(`crops.${parcel.crop_type}`)} ·{" "}
               {isEditing && editAreaHa != null ? (
                 <span>
-                  <b className="text-amber-700">{editAreaHa.toFixed(2)} ха</b>
+                  <b className="text-amber-700">{editAreaHa.toFixed(2)} {t("units.ha")}</b>
                   <span className="ml-1 text-xs">
-                    ({(editAreaHa * 10).toFixed(1)} дка
+                    ({(editAreaHa * 10).toFixed(1)} {t("units.dka")}
                     {(() => {
                       const d = (editAreaHa - parcel.area_hectares) * 10;
                       const sign = d >= 0 ? "+" : "";
                       const cls = d > 0 ? "text-emerald-600" : d < 0 ? "text-red-600" : "text-muted-foreground";
-                      return <span className={`ml-1 font-semibold ${cls}`}>{sign}{d.toFixed(2)} дка спрямо преди</span>;
+                      return <span className={`ml-1 font-semibold ${cls}`}>{sign}{d.toFixed(2)} {t("units.dka")}</span>;
                     })()})
                   </span>
                 </span>
               ) : (
-                <span>{parcel.area_hectares} ха ({(parcel.area_hectares * 10).toFixed(1)} дка)</span>
+                <span>{parcel.area_hectares} {t("units.ha")} ({(parcel.area_hectares * 10).toFixed(1)} {t("units.dka")})</span>
               )}
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Затвори">
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("parcelDetail.close")}>
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -208,7 +210,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           if (ring && ring.length >= 3) return null;
           return (
             <div className="border-b border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900">
-              ⚠ Границите на парцела не са нанесени. Редактирай парцела за да добавиш граници.
+              {t("parcelDetail.missingBoundary")}
             </div>
           );
         })()}
@@ -217,7 +219,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
         {isEditing && (
           <div className="sticky top-[72px] z-10 border-b-2 border-amber-400 bg-amber-50 px-4 py-3 shadow-sm">
             <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-amber-900">
-              <Pencil className="h-3.5 w-3.5" /> Редактиране на форма на парцела
+              <Pencil className="h-3.5 w-3.5" /> {t("parcelDetail.editingTitle")}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -226,7 +228,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
                 className="bg-emerald-600 text-white hover:bg-emerald-700"
               >
                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Запази промените
+                {t("parcelDetail.saveChanges")}
               </Button>
               <Button
                 onClick={() => onCancelEdit?.()}
@@ -235,11 +237,11 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
                 className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <Ban className="mr-2 h-4 w-4" />
-                Откажи
+                {t("parcelDetail.cancel")}
               </Button>
             </div>
             <p className="mt-2 text-[11px] text-amber-800">
-              Влачи ъглите за нова форма · кликни в средата на ръба за нов ъгъл · двойно кликване изтрива ъгъл.
+              {t("parcelDetail.editingHint")}
             </p>
           </div>
         )}
