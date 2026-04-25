@@ -119,6 +119,12 @@ function AddParcel() {
   const handlePlaceSelect = (place: PlaceResult) => {
     const map = mapRef.current;
     if (!map) return;
+    console.log("[map.flyTo] add-parcel search bar", {
+      primary: place.primary,
+      secondary: place.secondary,
+      lon: place.lon,
+      lat: place.lat,
+    });
     map.flyTo({ center: [place.lon, place.lat], zoom: 13, duration: 1000, essential: true });
     setSearchedPlace({ name: place.primary, lat: place.lat, lon: place.lon });
 
