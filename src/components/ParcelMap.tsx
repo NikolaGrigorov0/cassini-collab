@@ -236,28 +236,36 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
     else map.once("load", apply);
   }, [parcels, selectedId, baseLayer, editingParcelId]);
 
-  // Fly to selected parcel — fits the polygon bounds with smooth animation.
-  // When editing, no side panel is open so we use symmetric padding.
+  // Fly to selected parcel — uses the same flyTo mechanism as the city
+  // search so the camera smoothly travels to the parcel's centroid.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedId) return;
     const parcel = parcels.find((p) => p.id === selectedId);
-    if (!parcel?.geometry?.coordinates?.[0]?.length) return;
+    const ring = parcel?.geometry?.coordinates?.[0] as [number, number][] | undefined;
+    if (!ring || ring.length < 3) return;
 
-    const coords = parcel.geometry.coordinates[0] as [number, number][];
-    const lons = coords.map((c) => c[0]);
-    const lats = coords.map((c) => c[1]);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
+    // Centroid of the polygon ring.
+    const cx = ring.reduce((s, c) => s + c[0], 0) / ring.length;
+    const cy = ring.reduce((s, c) => s + c[1], 0) / ring.length;
 
-    const rightPad = editingParcelId ? 80 : 420;
+    // Pick a zoom that frames the parcel; bigger parcels → lower zoom.
+    const lons = ring.map((c) => c[0]);
+    const lats = ring.map((c) => c[1]);
+    const span = Math.max(
+      Math.max(...lons) - Math.min(...lons),
+      Math.max(...lats) - Math.min(...lats),
+    );
+    const targetZoom = span > 0.05 ? 12 : span > 0.01 ? 14 : span > 0.003 ? 15 : 16;
+
     const fly = () => {
-      map.fitBounds(
-        [[minLon, minLat], [maxLon, maxLat]],
-        { padding: { top: 80, bottom: 80, left: 80, right: rightPad }, duration: 1200, maxZoom: 16, essential: true },
-      );
+      map.flyTo({
+        center: [cx, cy],
+        zoom: targetZoom,
+        speed: 1.5,
+        curve: 1.4,
+        essential: true,
+      });
     };
     if (map.isStyleLoaded()) fly();
     else map.once("load", fly);
