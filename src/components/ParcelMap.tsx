@@ -259,6 +259,9 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
     const targetZoom = span > 0.05 ? 12 : span > 0.01 ? 14 : span > 0.003 ? 15 : 16;
 
     const fly = () => {
+      console.log(cx);
+      console.log(cy);
+      
       map.flyTo({
         center: [cx, cy],
         zoom: targetZoom,
