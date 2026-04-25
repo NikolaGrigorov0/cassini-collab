@@ -332,18 +332,12 @@ export function TryItYourselfMini() {
             <div className="relative h-[420px] overflow-hidden rounded-2xl border border-border bg-card shadow-elevated sm:h-[480px]">
               <div ref={containerRef} className="absolute inset-0" />
 
-              {/* Top controls */}
-              <div className="pointer-events-auto absolute left-3 top-3 flex flex-col gap-2 rounded-xl border border-border bg-card/95 p-2 backdrop-blur-md shadow-card">
-                <Button size="sm" onClick={detectLocation} disabled={locating} className="bg-primary hover:bg-primary/90">
-                  {locating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Locate className="mr-1.5 h-4 w-4" />}
-                  {locating ? "Откриване..." : "Моята локация"}
-                </Button>
-                {!center && (
-                  <p className="max-w-[180px] px-1 text-[11px] text-muted-foreground">
-                    Или кликни директно на картата, за да маркираш терен.
-                  </p>
-                )}
-              </div>
+              {/* Top controls — hint only; click the map to mark a plot */}
+              {!center && (
+                <div className="pointer-events-none absolute left-3 top-3 max-w-[220px] rounded-xl border border-border bg-card/95 px-3 py-2 text-[11px] text-muted-foreground backdrop-blur-md shadow-card">
+                  Кликни директно на картата, за да маркираш терен.
+                </div>
+              )}
 
               {/* Step badge */}
               <div className="pointer-events-none absolute right-3 top-3 rounded-full border border-border bg-card/95 px-3 py-1 text-xs font-semibold backdrop-blur-md">
