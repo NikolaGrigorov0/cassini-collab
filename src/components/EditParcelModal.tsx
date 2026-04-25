@@ -209,6 +209,20 @@ export function EditParcelModal({ open, parcel, onOpenChange, onSaved, onRedrawB
             </p>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="parcel-sowing">📅 Дата на засяване</Label>
+            <Input
+              id="parcel-sowing"
+              type="date"
+              value={sowingDate}
+              onChange={(e) => setSowingDate(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Текущата фенофаза се изчислява автоматично от датата на засяване.
+            </p>
+          </div>
+
           {/* Section 2 — Polygon redraw */}
           <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3">
             <div className="flex items-start justify-between gap-3">
