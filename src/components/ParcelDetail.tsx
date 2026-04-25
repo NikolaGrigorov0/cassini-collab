@@ -376,6 +376,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             growthPhase={parcel.growth_phase}
             currentNDMI={ndmi}
             recommendedDoseMM={dose}
+            currentStatus={statusKey as "green" | "yellow" | "red"}
             soilType={parcel.soil_type ?? null}
           />
 

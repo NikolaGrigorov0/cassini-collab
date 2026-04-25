@@ -111,3 +111,28 @@ export function nextCheckDate(daysFromNow: number): Date {
   d.setDate(d.getDate() + daysFromNow);
   return d;
 }
+
+export interface ReverseResult {
+  restoredNDMI: number;
+  restoredDose: number;
+  restoredStatus: RecStatus;
+  restoredReason: string;
+}
+
+/** Restore the pre-irrigation values exactly — used when the farmer presses
+ *  "Отмени" after logging a watering by mistake. */
+export function reverseIrrigation(
+  ndmiBefore: number,
+  statusBefore: string,
+  originalDoseBefore: number,
+): ReverseResult {
+  const status = (["green", "yellow", "red"] as const).includes(statusBefore as RecStatus)
+    ? (statusBefore as RecStatus)
+    : "yellow";
+  return {
+    restoredNDMI: ndmiBefore,
+    restoredDose: Math.round(originalDoseBefore * 10) / 10,
+    restoredStatus: status,
+    restoredReason: "Напояването е отменено. Върнати са оригиналните стойности.",
+  };
+}
