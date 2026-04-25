@@ -168,8 +168,16 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="absolute inset-0 z-10 bg-foreground/10 backdrop-blur-[1px]" onClick={isEditing ? undefined : onClose} />
+      {/* Click-catcher over the map area only (left of the panel) — keeps the
+          selected parcel visible and unblurred while still letting the user
+          click outside to close. Disabled while editing. */}
+      {!isEditing && (
+        <div
+          className="absolute inset-y-0 left-0 z-10 right-0 sm:right-[400px]"
+          onClick={onClose}
+          aria-hidden
+        />
+      )}
       {/* Panel */}
       <aside className="absolute right-0 top-0 z-20 flex h-full w-full max-w-[400px] flex-col overflow-y-auto border-l border-border bg-card shadow-elevated animate-slide-in-right">
         <div className="sticky top-0 z-10 flex items-start justify-between border-b border-border bg-card/95 p-4 backdrop-blur">
