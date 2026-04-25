@@ -349,7 +349,6 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             parcelName={parcel.name}
             geometry={parcel.geometry}
             areaHectares={parcel.area_hectares}
-            suggestedDoseMm={dose > 0 ? dose : undefined}
           />
 
           {/* Soil moisture balance trend (auto-updated daily by cron) */}
