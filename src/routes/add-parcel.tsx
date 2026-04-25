@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
 import { ParcelImport } from "@/components/ParcelImport";
+import { LocationSearchBar } from "@/components/LocationSearchBar";
+import type { PlaceResult } from "@/hooks/useLocationSearch";
 import { CROP_ICONS, CROP_LABELS, PHASE_LABELS, type CropType, type GrowthPhase } from "@/lib/mockData";
 import { SATELLITE_STYLE } from "@/lib/mapStyle";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +56,8 @@ function AddParcel() {
   const drawingRef = useRef(false);
   const pointsRef = useRef<[number, number][]>([]);
   const [drawing, setDrawing] = useState(false);
+  const [searchedPlace, setSearchedPlace] = useState<{ name: string; lat: number; lon: number } | null>(null);
+  const markerRef = useRef<maplibregl.Marker | null>(null);
 
   // Init map (only on step 1)
   useEffect(() => {
@@ -96,6 +100,9 @@ function AddParcel() {
       if (!drawingRef.current) return;
       pointsRef.current = [...pointsRef.current, [e.lngLat.lng, e.lngLat.lat]];
       updateLayer();
+      // Hide pulsing marker + banner once user starts drawing
+      if (markerRef.current) { markerRef.current.remove(); markerRef.current = null; }
+      setSearchedPlace(null);
     });
     map.on("dblclick", (e) => {
       if (!drawingRef.current) return;
@@ -108,6 +115,31 @@ function AddParcel() {
 
     return () => { map.remove(); mapRef.current = null; };
   }, [step]);
+
+  const handlePlaceSelect = (place: PlaceResult) => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.flyTo({ center: [place.lon, place.lat], zoom: 13, duration: 1000, essential: true });
+    setSearchedPlace({ name: place.primary, lat: place.lat, lon: place.lon });
+
+    // Remove any existing marker
+    if (markerRef.current) { markerRef.current.remove(); markerRef.current = null; }
+
+    // Add pulsing green marker after fly animation
+    setTimeout(() => {
+      if (!mapRef.current) return;
+      const el = document.createElement("div");
+      el.className = "aqua-pulse-marker";
+      el.innerHTML = `
+        <span class="aqua-pulse-ring"></span>
+        <span class="aqua-pulse-dot"></span>
+      `;
+      const m = new maplibregl.Marker({ element: el })
+        .setLngLat([place.lon, place.lat])
+        .addTo(mapRef.current);
+      markerRef.current = m;
+    }, 1000);
+  };
 
   const startDrawing = () => {
     pointsRef.current = [];
@@ -208,8 +240,16 @@ function AddParcel() {
         <div className="relative flex flex-1 overflow-hidden">
           <div ref={containerRef} className="h-full w-full" />
 
+          <LocationSearchBar onSelect={handlePlaceSelect} />
+
+          {searchedPlace && (
+            <div className="absolute left-4 top-[68px] z-10 w-[300px] max-w-[calc(100vw-2rem)] rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900 shadow-lg">
+              📍 <span className="font-semibold">{searchedPlace.name}</span> — Намери парцела и нарисувай границите му
+            </div>
+          )}
+
           {/* Toolbar */}
-          <div className="absolute left-4 top-4 z-10 flex flex-col gap-2 rounded-2xl border border-border bg-card p-3 shadow-elevated max-w-[calc(100vw-2rem)]">
+          <div className="absolute left-4 top-[120px] z-10 flex flex-col gap-2 rounded-2xl border border-border bg-card p-3 shadow-elevated max-w-[calc(100vw-2rem)]">
             <div className="text-sm font-semibold">Стъпка 1: Начертай парцела</div>
             <p className="text-xs text-muted-foreground">Кликни за вертекси, двоен клик за край.</p>
             <div className="flex gap-2">
