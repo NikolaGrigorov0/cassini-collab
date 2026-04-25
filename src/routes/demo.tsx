@@ -148,9 +148,15 @@ function DemoTour() {
             })}
           </div>
 
-          {/* Tour overlay — bottom center */}
+          {/* Tour overlay — bottom center, shifted left when the right-side parcel panel is open */}
           {tourOpen && (
-            <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 w-[min(560px,calc(100%-2rem))] -translate-x-1/2 animate-fade-in">
+            <div
+              className={`pointer-events-auto absolute bottom-6 z-30 w-[min(560px,calc(100%-2rem))] animate-fade-in ${
+                selected
+                  ? "left-4 sm:left-6 md:left-1/2 md:-translate-x-[calc(50%+210px)]"
+                  : "left-1/2 -translate-x-1/2"
+              }`}
+            >
               <div className="rounded-2xl border-2 border-primary/40 bg-card/98 p-5 shadow-elevated backdrop-blur">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
