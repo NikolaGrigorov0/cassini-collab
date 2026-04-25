@@ -75,6 +75,7 @@ function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [soilLoadingId, setSoilLoadingId] = useState<string | null>(null);
   const [soilErrorByParcel, setSoilErrorByParcel] = useState<Record<string, string>>({});
+  const [soilRetryNonce, setSoilRetryNonce] = useState(0);
   const [editDetailsId, setEditDetailsId] = useState<string | null>(null);
 
   // Deficit mode
@@ -297,8 +298,8 @@ function Dashboard() {
     if (!selectedId) return;
     const parcel = parcels.find((p) => p.id === selectedId);
     if (!parcel) return;
-    // Treat "Неизвестна" as not-enriched so we retry once the API/logic is fixed.
-    if (parcel.soil_type && parcel.soil_type !== "Неизвестна") return;
+    // Treat empty/"Неизвестна" as not-enriched so the UI can retry and always show something useful.
+    if (parcel.soil_type_bg || (parcel.soil_type && parcel.soil_type !== "Неизвестна")) return;
     let cancelled = false;
     setSoilLoadingId(selectedId);
     setSoilErrorByParcel((m) => {
@@ -366,7 +367,7 @@ function Dashboard() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [selectedId, soilRetryNonce]);
 
   // Keyboard shortcut: N -> Add parcel
   useEffect(() => {
