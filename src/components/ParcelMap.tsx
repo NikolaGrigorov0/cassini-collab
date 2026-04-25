@@ -259,9 +259,14 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
     const targetZoom = span > 0.05 ? 12 : span > 0.01 ? 14 : span > 0.003 ? 15 : 16;
 
     const fly = () => {
-      console.log(cx);
-      console.log(cy);
-      
+      console.log("[map.flyTo] parcel click", {
+        parcelId: selectedId,
+        parcelName: parcel?.name,
+        ringPoints: ring.length,
+        centroid: { lon: cx, lat: cy },
+        span,
+        targetZoom,
+      });
       map.flyTo({
         center: [cx, cy],
         zoom: targetZoom,
@@ -279,6 +284,11 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
     const map = mapRef.current;
     if (!map || !flyToTarget) return;
     const fly = () => {
+      console.log("[map.flyTo] external (search bar)", {
+        lon: flyToTarget.lon,
+        lat: flyToTarget.lat,
+        nonce: flyToTarget.nonce,
+      });
       map.flyTo({
         center: [flyToTarget.lon, flyToTarget.lat],
         zoom: 13,
