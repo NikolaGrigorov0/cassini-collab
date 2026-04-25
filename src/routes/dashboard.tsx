@@ -12,6 +12,7 @@ import { DeficitScheduleView } from "@/components/DeficitScheduleView";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { EditModeBar } from "@/components/EditModeBar";
 import { EditParcelModal } from "@/components/EditParcelModal";
+import { PhasePill } from "@/components/GrowthPhaseIndicator";
 import { useRealtimeStatus } from "@/hooks/useRealtimeStatus";
 import type { DeficitPlan } from "@/lib/deficitPlanner";
 import { CROP_ICONS, CROP_LABELS, STATUS_COLORS, type MockParcel, type CropType, type GrowthPhase, type IrrigationStatus } from "@/lib/mockData";
@@ -643,6 +644,9 @@ function Dashboard() {
                                 )}
                               </div>
                               <div className="text-xs text-muted-foreground">{t(`crops.${p.crop_type}`)} · {p.area_hectares} {t("units.ha")}</div>
+                              <div className="mt-1">
+                                <PhasePill phase={p.growth_phase} />
+                              </div>
                             </div>
                           </div>
                           <span className="h-2.5 w-2.5 shrink-0 rounded-full mt-1.5" style={{ backgroundColor: s.fill }} />
