@@ -21,6 +21,8 @@ interface ParcelMapProps {
   onEditingGeometryChange?: (geometry: GeoJSON.Polygon, areaHectares: number) => void;
   /** When > 0, the map flies to this target (lat/lon) at zoom 13. */
   flyToTarget?: { lat: number; lon: number; nonce: number } | null;
+  /** When set, fly to this parcel's centroid (parcel sidebar click). */
+  flyToParcelTarget?: { lat: number; lon: number; zoom: number; nonce: number } | null;
   /** Hide place search bar (e.g. while editing a polygon). */
   hidePlaceSearch?: boolean;
 }
@@ -54,7 +56,7 @@ const STYLES: Record<BaseLayer, maplibregl.StyleSpecification> = {
   ndvi: NDVI_STYLE,
 };
 
-export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.15], zoom = 13, editingParcelId = null, onEditingGeometryChange, flyToTarget = null, hidePlaceSearch = false }: ParcelMapProps) {
+export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.15], zoom = 13, editingParcelId = null, onEditingGeometryChange, flyToTarget = null, flyToParcelTarget = null, hidePlaceSearch = false }: ParcelMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onSelectRef = useRef(onSelect);
@@ -373,6 +375,30 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
     if (map.isStyleLoaded()) fly();
     else map.once("load", fly);
   }, [flyToTarget?.nonce, flyToTarget?.lat, flyToTarget?.lon]);
+
+  // Fly-to specific parcel — uses the same flyTo mechanism as the city
+  // search so the camera smoothly travels to the parcel centroid.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !flyToParcelTarget) return;
+    const fly = () => {
+      console.log("[map.flyTo] parcel sidebar click", {
+        lon: flyToParcelTarget.lon,
+        lat: flyToParcelTarget.lat,
+        zoom: flyToParcelTarget.zoom,
+        nonce: flyToParcelTarget.nonce,
+      });
+      map.flyTo({
+        center: [flyToParcelTarget.lon, flyToParcelTarget.lat],
+        zoom: flyToParcelTarget.zoom,
+        speed: 1.5,
+        curve: 1.4,
+        essential: true,
+      });
+    };
+    if (map.isStyleLoaded()) fly();
+    else map.once("load", fly);
+  }, [flyToParcelTarget?.nonce, flyToParcelTarget?.lat, flyToParcelTarget?.lon, flyToParcelTarget?.zoom]);
 
 
   // --- NDMI per-parcel heatmap (Sentinel-2 raster, 10m/pixel) ---
