@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications";
 import { getRainForGeometry, type RainInfo } from "@/lib/weather";
 import { convertWater } from "@/lib/waterUnits";
+import { recalculateAfterIrrigation, recomputeForecast } from "@/lib/irrigationCorrection";
 import { toast } from "sonner";
 
 interface Props {
@@ -23,6 +24,25 @@ interface Props {
   geometry?: unknown;
   /** Parcel area in hectares — used to convert mm → liters in messages. */
   areaHectares?: number;
+  /** Current NDMI baseline — used to compute soil-moisture lift after rain. */
+  currentNDMI?: number;
+  /** Latest recommended dose (mm) — used as baseline for forecast scaling. */
+  recommendedDoseMM?: number;
+  /** Crop + phase passed to recalculateAfterIrrigation (forward-compat). */
+  cropType?: string;
+  growthPhase?: string;
+  /** Soil type (drives NDMI lift multiplier). */
+  soilType?: string | null;
+  /** Same patch contract as WateringLog — updates dose/status/NDMI/forecast. */
+  onIrrigationChange?: (patch: {
+    ndmi: number;
+    dose_mm: number;
+    status: "green" | "yellow" | "red";
+    reason: string;
+    forecastTransform: (
+      prev: { date: string; dose_mm: number; status: "green" | "yellow" | "red" }[],
+    ) => { date: string; dose_mm: number; status: "green" | "yellow" | "red" }[];
+  }) => void;
 }
 
 type ActionKind = "rain" | null;
@@ -32,6 +52,12 @@ export function QuickIrrigationActions({
   parcelName,
   geometry,
   areaHectares,
+  currentNDMI = 0,
+  recommendedDoseMM = 0,
+  cropType = "",
+  growthPhase = "",
+  soilType = null,
+  onIrrigationChange,
 }: Props) {
   const [kind, setKind] = useState<ActionKind>(null);
   const [amount, setAmount] = useState<string>("");
@@ -95,15 +121,44 @@ export function QuickIrrigationActions({
     const mm = m3 / areaDka;
     setSaving(true);
     try {
+      // Recalculate locally so UI updates immediately — same pipeline as "Полях днес".
+      const correction = recalculateAfterIrrigation(
+        currentNDMI,
+        mm,
+        cropType,
+        growthPhase,
+        recommendedDoseMM,
+        soilType,
+      );
+      const statusBefore = recommendedDoseMM <= 0 ? "green" : recommendedDoseMM < 10 ? "yellow" : "red";
+
       const { error } = await supabase.from("irrigation_events").insert({
         parcel_id: parcelId,
         amount_mm: mm,
+        dose_mm: mm,
         method: "rain",
+        ndmi_before: currentNDMI,
+        ndmi_after: correction.correctedNDMI,
+        status_before: statusBefore,
+        status_after: correction.newStatus,
+        original_dose_mm: recommendedDoseMM,
         notes: rainInfo
           ? `Авто от Open-Meteo: ${rainInfo.place} (${rainInfo.lat.toFixed(3)}, ${rainInfo.lon.toFixed(3)})`
           : null,
       });
       if (error) throw error;
+
+      // Persist the corrected recommendation.
+      const validUntil = new Date(Date.now() + 7 * 86400_000).toISOString();
+      await supabase.from("irrigation_recommendations").insert({
+        parcel_id: parcelId,
+        dose_mm: correction.newDose,
+        status: correction.newStatus,
+        reason: `Регистриран валеж ${mm.toFixed(1)}мм. ${correction.newReason}`,
+        valid_until: validUntil,
+        data_source: "post-rain-correction",
+        confidence_pct: 85,
+      });
 
       const placeSuffix = rainInfo ? ` (${rainInfo.place})` : "";
       await createNotification({
@@ -114,6 +169,14 @@ export function QuickIrrigationActions({
       });
 
       toast.success("Валежът е записан");
+      onIrrigationChange?.({
+        ndmi: correction.correctedNDMI,
+        dose_mm: correction.newDose,
+        status: correction.newStatus,
+        reason: `Регистриран валеж ${mm.toFixed(1)}мм. ${correction.newReason}`,
+        forecastTransform: (prev) =>
+          recomputeForecast(prev, currentNDMI, correction.correctedNDMI, recommendedDoseMM),
+      });
       close();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Грешка при запис");

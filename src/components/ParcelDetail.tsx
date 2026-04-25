@@ -397,6 +397,12 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             parcelName={parcel.name}
             geometry={parcel.geometry}
             areaHectares={parcel.area_hectares}
+            currentNDMI={ndmi}
+            recommendedDoseMM={dose}
+            cropType={parcel.crop_type}
+            growthPhase={parcel.growth_phase}
+            soilType={parcel.soil_type ?? null}
+            onIrrigationChange={onIrrigationChange}
           />
 
           {/* Soil moisture balance trend (auto-updated daily by cron) */}
