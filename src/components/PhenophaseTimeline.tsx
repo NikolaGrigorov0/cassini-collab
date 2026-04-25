@@ -53,9 +53,19 @@ export function PhenophaseTimeline({ parcelId, cropType, sowingDate, ndvi, onEdi
   const reload = async () => {
     setLoading(true);
     setError(null);
+    // Reset phases to avoid showing the previous crop's timeline while the
+    // new crop loads (race when switching parcels with different crops).
+    setPhases(null);
+    setGrowth(null);
     try {
       const all = await fetchPhenophases();
       const cropPhases = getPhasesForCrop(all, cropType);
+      if (cropPhases.length === 0) {
+        console.warn(
+          `[PhenophaseTimeline] No phases found for crop_type="${cropType}". ` +
+            `Available: ${[...new Set(all.map((p) => p.crop_type))].join(", ")}`,
+        );
+      }
       setPhases(cropPhases);
       const { row } = await syncAutoPhase(parcelId, cropType, sowing);
       setGrowth(row);
