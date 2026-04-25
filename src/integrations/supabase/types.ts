@@ -111,33 +111,60 @@ export type Database = {
           amount_mm: number
           created_at: string
           date: string
+          dose_mm: number | null
           id: string
+          irrigated_at: string | null
           method: string
+          ndmi_after: number | null
+          ndmi_before: number | null
           notes: string | null
+          original_dose_mm: number | null
           parcel_id: string
           soil_moisture_after: number | null
+          status_after: string | null
+          status_before: string | null
+          undone: boolean
+          undone_at: string | null
           user_id: string | null
         }
         Insert: {
           amount_mm: number
           created_at?: string
           date?: string
+          dose_mm?: number | null
           id?: string
+          irrigated_at?: string | null
           method?: string
+          ndmi_after?: number | null
+          ndmi_before?: number | null
           notes?: string | null
+          original_dose_mm?: number | null
           parcel_id: string
           soil_moisture_after?: number | null
+          status_after?: string | null
+          status_before?: string | null
+          undone?: boolean
+          undone_at?: string | null
           user_id?: string | null
         }
         Update: {
           amount_mm?: number
           created_at?: string
           date?: string
+          dose_mm?: number | null
           id?: string
+          irrigated_at?: string | null
           method?: string
+          ndmi_after?: number | null
+          ndmi_before?: number | null
           notes?: string | null
+          original_dose_mm?: number | null
           parcel_id?: string
           soil_moisture_after?: number | null
+          status_after?: string | null
+          status_before?: string | null
+          undone?: boolean
+          undone_at?: string | null
           user_id?: string | null
         }
         Relationships: []
