@@ -45,6 +45,7 @@ type ParcelRow = {
   area_hectares: number;
   geometry: string;
   pump_flow_m3h: number | null;
+  sowing_date: string | null;
   soil_type: string | null;
   soil_type_wrb: string | null;
   soil_type_bg: string | null;
@@ -131,7 +132,7 @@ function Dashboard() {
       setLoadingData(true);
       const { data: p, error } = await supabase
         .from("parcels")
-        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h, soil_type, soil_type_wrb, soil_type_bg, soil_fc_pct, soil_wp_pct, soil_awc_pct, soil_ph, soil_organic_carbon, soil_clay_pct, soil_sand_pct, soil_silt_pct")
+        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h, sowing_date, soil_type, soil_type_wrb, soil_type_bg, soil_fc_pct, soil_wp_pct, soil_awc_pct, soil_ph, soil_organic_carbon, soil_clay_pct, soil_sand_pct, soil_silt_pct")
         .order("created_at", { ascending: false });
       if (error) {
         toast.error(error.message);
@@ -193,6 +194,7 @@ function Dashboard() {
           recorded_at: nd?.recorded_at ?? new Date().toISOString(),
           forecast: [],
           pump_flow_m3h: row.pump_flow_m3h,
+          sowing_date: row.sowing_date,
           soil_type: row.soil_type,
           soil_type_wrb: row.soil_type_wrb,
           soil_type_bg: row.soil_type_bg,
