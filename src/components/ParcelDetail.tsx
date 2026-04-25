@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Droplets, Calendar, Satellite, Share2, CloudRain, Loader2, Trash2, Gauge, Pencil, Save, Ban, Search } from "lucide-react";
+import { X, Droplets, Calendar, Satellite, Share2, CloudRain, Loader2, Trash2, Gauge, Pencil, Save, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -123,17 +123,7 @@ function MockForecastChart({ data, areaHectares }: { data: MockParcel["forecast"
   );
 }
 
-function tryParseJson(text: string) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
 export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false, soilLoading = false, soilError = null, onEditDetails, onRetrySoil }: ParcelDetailProps) {
-  const [soilDebugLoading, setSoilDebugLoading] = useState(false);
-  const [soilDebugRaw, setSoilDebugRaw] = useState<string | null>(null);
   // Prefer live data when present; otherwise fall back to whatever was on the parcel.
   const ndmi = liveData?.ndmi ?? parcel.ndmi;
   const ndvi = liveData?.ndvi ?? parcel.ndvi;
@@ -162,25 +152,6 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
 
   const recordedAgo = Math.round((Date.now() - new Date(parcel.recorded_at).getTime()) / 86400000);
   const isSar = liveData?.source === "sentinel-1-sar";
-
-  const testSoilApi = async () => {
-    const ring = parcel.geometry?.coordinates?.[0] as [number, number][] | undefined;
-    if (!ring?.length) return;
-    const lng = ring.reduce((sum, point) => sum + point[0], 0) / ring.length;
-    const lat = ring.reduce((sum, point) => sum + point[1], 0) / ring.length;
-    const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lng}&lat=${lat}&property=wrb_class_name&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=Q0.5`;
-    setSoilDebugLoading(true);
-    setSoilDebugRaw(null);
-    try {
-      const response = await fetch(url);
-      const text = await response.text();
-      setSoilDebugRaw(JSON.stringify({ url, status: response.status, body: tryParseJson(text) ?? text }, null, 2));
-    } catch (error) {
-      setSoilDebugRaw(JSON.stringify({ url, error: error instanceof Error ? error.message : String(error) }, null, 2));
-    } finally {
-      setSoilDebugLoading(false);
-    }
-  };
 
   return (
     <>
@@ -423,18 +394,6 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             error={soilError}
             onRetry={onRetrySoil}
           />
-
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-            <Button type="button" variant="outline" size="sm" onClick={testSoilApi} disabled={soilDebugLoading} className="w-full">
-              {soilDebugLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-              🔍 Тест почва
-            </Button>
-            {soilDebugRaw && (
-              <pre className="mt-3 max-h-72 overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-[11px] leading-relaxed text-foreground">
-                {soilDebugRaw}
-              </pre>
-            )}
-          </div>
 
           {/* Forecast */}
           {liveData && liveData.forecast.length > 0 ? (
