@@ -178,40 +178,18 @@ export function QuickIrrigationActions({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="flex flex-col gap-1">
-          <Button
-            variant="outline"
-            className="border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950"
-            onClick={logOptimalIrrigation}
-            disabled={savingIrrigation}
-          >
-            {savingIrrigation ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Droplet className="mr-2 h-4 w-4" />
-            )}
-            Полях днес
-          </Button>
-          <p className="px-1 text-[10px] leading-tight text-muted-foreground">
-            {optimalM3
-              ? `Записва ~${optimalM3} м³ (оптимална доза)`
-              : `Записва оптимална доза`}
-          </p>
-        </div>
-        <div className="flex flex-col gap-1">
-          <Button
-            variant="outline"
-            className="border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-700 dark:text-sky-300 dark:hover:bg-sky-950"
-            onClick={openRain}
-          >
-            <CloudRain className="mr-2 h-4 w-4" />
-            Вали днес
-          </Button>
-          <p className="px-1 text-[10px] leading-tight text-muted-foreground">
-            Авто от метео за района
-          </p>
-        </div>
+      <div className="flex flex-col gap-1">
+        <Button
+          variant="outline"
+          className="w-full border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-700 dark:text-sky-300 dark:hover:bg-sky-950"
+          onClick={openRain}
+        >
+          <CloudRain className="mr-2 h-4 w-4" />
+          🌧️ Вали днес
+        </Button>
+        <p className="px-1 text-[10px] leading-tight text-muted-foreground">
+          Авто от метео за района
+        </p>
       </div>
 
       <Dialog open={kind !== null} onOpenChange={(o) => !o && close()}>
