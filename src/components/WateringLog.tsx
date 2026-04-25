@@ -27,6 +27,8 @@ interface Props {
   currentNDMI: number;
   /** Recommended dose from the latest recommendation (mm). 0 if green. */
   recommendedDoseMM: number;
+  /** Soil type label from ISRIC enrichment (drives soil-aware NDMI lift). */
+  soilType?: string | null;
 }
 
 interface IrrigationRow {
@@ -48,6 +50,7 @@ export function WateringLog({
   growthPhase,
   currentNDMI,
   recommendedDoseMM,
+  soilType,
 }: Props) {
   const defaultDose = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
   const [open, setOpen] = useState(false);
@@ -104,6 +107,7 @@ export function WateringLog({
         cropType,
         growthPhase,
         recommendedDoseMM,
+        soilType,
       );
 
       // 3. Persist the corrected recommendation right away (the DB trigger will

@@ -11,6 +11,7 @@ import { WaterDeficitModal } from "@/components/WaterDeficitModal";
 import { DeficitScheduleView } from "@/components/DeficitScheduleView";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { EditModeBar } from "@/components/EditModeBar";
+import { EditParcelModal } from "@/components/EditParcelModal";
 import { useRealtimeStatus } from "@/hooks/useRealtimeStatus";
 import type { DeficitPlan } from "@/lib/deficitPlanner";
 import { CROP_ICONS, CROP_LABELS, STATUS_COLORS, type MockParcel, type CropType, type GrowthPhase, type IrrigationStatus } from "@/lib/mockData";
@@ -40,6 +41,12 @@ type ParcelRow = {
   area_hectares: number;
   geometry: string;
   pump_flow_m3h: number | null;
+  soil_type: string | null;
+  soil_ph: number | null;
+  soil_organic_carbon: number | null;
+  soil_clay_pct: number | null;
+  soil_sand_pct: number | null;
+  soil_silt_pct: number | null;
 };
 
 type RecRow = {
@@ -61,6 +68,9 @@ function Dashboard() {
   const [liveByParcel, setLiveByParcel] = useState<Record<string, LiveParcelData>>({});
   const [liveLoadingId, setLiveLoadingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [soilLoadingId, setSoilLoadingId] = useState<string | null>(null);
+  const [soilErrorByParcel, setSoilErrorByParcel] = useState<Record<string, string>>({});
+  const [editDetailsId, setEditDetailsId] = useState<string | null>(null);
 
   // Deficit mode
   const [deficitModalOpen, setDeficitModalOpen] = useState(false);
@@ -108,7 +118,7 @@ function Dashboard() {
       setLoadingData(true);
       const { data: p, error } = await supabase
         .from("parcels")
-        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h")
+        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h, soil_type, soil_ph, soil_organic_carbon, soil_clay_pct, soil_sand_pct, soil_silt_pct")
         .order("created_at", { ascending: false });
       if (error) {
         toast.error(error.message);
@@ -170,6 +180,12 @@ function Dashboard() {
           recorded_at: nd?.recorded_at ?? new Date().toISOString(),
           forecast: [],
           pump_flow_m3h: row.pump_flow_m3h,
+          soil_type: row.soil_type,
+          soil_ph: row.soil_ph == null ? null : Number(row.soil_ph),
+          soil_organic_carbon: row.soil_organic_carbon == null ? null : Number(row.soil_organic_carbon),
+          soil_clay_pct: row.soil_clay_pct == null ? null : Number(row.soil_clay_pct),
+          soil_sand_pct: row.soil_sand_pct == null ? null : Number(row.soil_sand_pct),
+          soil_silt_pct: row.soil_silt_pct == null ? null : Number(row.soil_silt_pct),
         };
       });
       if (!cancelled) {
@@ -259,6 +275,71 @@ function Dashboard() {
       })
       .finally(() => {
         if (!cancelled) setLiveLoadingId((id) => (id === selectedId ? null : id));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  // Auto-enrich soil for the selected parcel if it doesn't have a soil_type yet.
+  useEffect(() => {
+    if (!selectedId) return;
+    const parcel = parcels.find((p) => p.id === selectedId);
+    if (!parcel) return;
+    if (parcel.soil_type) return; // already enriched
+    let cancelled = false;
+    setSoilLoadingId(selectedId);
+    setSoilErrorByParcel((m) => {
+      const next = { ...m };
+      delete next[selectedId];
+      return next;
+    });
+    fetch("/api/enrich-soil", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parcel_id: selectedId }),
+    })
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j?.error ?? `HTTP ${r.status}`);
+        return j as {
+          soil_type: string | null;
+          soil_ph: number | null;
+          soil_organic_carbon: number | null;
+          soil_clay_pct: number | null;
+          soil_sand_pct: number | null;
+          soil_silt_pct: number | null;
+        };
+      })
+      .then((j) => {
+        if (cancelled) return;
+        setParcels((prev) =>
+          prev.map((p) =>
+            p.id === selectedId
+              ? {
+                  ...p,
+                  soil_type: j.soil_type ?? p.soil_type,
+                  soil_ph: j.soil_ph ?? p.soil_ph,
+                  soil_organic_carbon: j.soil_organic_carbon ?? p.soil_organic_carbon,
+                  soil_clay_pct: j.soil_clay_pct ?? p.soil_clay_pct,
+                  soil_sand_pct: j.soil_sand_pct ?? p.soil_sand_pct,
+                  soil_silt_pct: j.soil_silt_pct ?? p.soil_silt_pct,
+                }
+              : p,
+          ),
+        );
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setSoilErrorByParcel((m) => ({
+          ...m,
+          [selectedId]: "Почвените данни временно недостъпни.",
+        }));
+        console.error("enrich-soil failed:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setSoilLoadingId((id) => (id === selectedId ? null : id));
       });
     return () => {
       cancelled = true;
@@ -598,8 +679,11 @@ function Dashboard() {
               onClose={() => setSelectedId(null)}
               liveData={liveByParcel[selected.id] ?? null}
               loadingLive={liveLoadingId === selected.id}
+              soilLoading={soilLoadingId === selected.id}
+              soilError={soilErrorByParcel[selected.id] ?? null}
               isEditing={false}
               editAreaHa={draftAreaHa}
+              onEditDetails={() => setEditDetailsId(selected.id)}
               onStartEdit={() => {
                 setEditingId(selected.id);
                 setDraftGeometry(selected.geometry);
@@ -670,6 +754,26 @@ function Dashboard() {
         onOpenChange={setDeficitModalOpen}
         parcels={parcels}
         onGenerate={handleGenerateDeficit}
+      />
+
+      <EditParcelModal
+        open={!!editDetailsId}
+        parcel={parcels.find((p) => p.id === editDetailsId) ?? null}
+        onOpenChange={(o) => { if (!o) setEditDetailsId(null); }}
+        onSaved={(next) => {
+          if (!editDetailsId) return;
+          setParcels((prev) => prev.map((p) => (p.id === editDetailsId ? { ...p, ...next } : p)));
+        }}
+        onRedrawBoundary={() => {
+          if (!editDetailsId) return;
+          const p = parcels.find((x) => x.id === editDetailsId);
+          if (!p) return;
+          setSelectedId(p.id);
+          setEditingId(p.id);
+          setDraftGeometry(p.geometry);
+          setDraftAreaHa(p.area_hectares);
+          setEditDetailsId(null);
+        }}
       />
     </div>
   );

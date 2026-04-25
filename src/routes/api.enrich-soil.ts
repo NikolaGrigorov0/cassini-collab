@@ -13,23 +13,62 @@ const CORS = {
 
 interface ReqBody { parcel_id: string }
 
-// SoilGrids REST: returns mean values for sand/clay/silt (g/kg) at 0-5cm depth.
+// SoilGrids REST: returns mean values for sand/clay/silt + pH + organic carbon.
 // Docs: https://rest.isric.org/soilgrids/v2.0/docs
-async function fetchSoilGrids(lat: number, lon: number) {
-  const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lat=${lat}&lon=${lon}&property=sand&property=clay&property=silt&depth=0-5cm&value=mean`;
+// We use 0-30cm depth for richer agronomic context (pH, SOC) and keep texture
+// at the same depth for consistency.
+async function fetchSoilGridsAt(lat: number, lon: number) {
+  const url =
+    `https://rest.isric.org/soilgrids/v2.0/properties/query?lat=${lat}&lon=${lon}` +
+    `&property=sand&property=clay&property=silt&property=phh2o&property=soc` +
+    `&depth=0-30cm&value=mean`;
   const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error(`SoilGrids ${r.status}`);
-  const j = await r.json() as {
+  const j = (await r.json()) as {
     properties?: { layers?: Array<{ name: string; depths?: Array<{ values?: { mean?: number } }> }> };
   };
   const layers = j.properties?.layers ?? [];
-  const get = (name: string) => {
+  // SoilGrids returns d_factor scaled values. Texture & SOC are g/kg ×10 so /10 → %.
+  // pH is pH × 10.
+  const raw = (name: string): number | null => {
     const l = layers.find((x) => x.name === name);
     const v = l?.depths?.[0]?.values?.mean;
-    // SoilGrids returns g/kg ×10. Convert to %.
-    return typeof v === "number" ? v / 10 : null;
+    return typeof v === "number" ? v : null;
   };
-  return { sand: get("sand"), clay: get("clay"), silt: get("silt") };
+  const pct = (name: string): number | null => {
+    const v = raw(name);
+    return v == null ? null : v / 10;
+  };
+  return {
+    sand: pct("sand"),
+    clay: pct("clay"),
+    silt: pct("silt"),
+    ph: (() => {
+      const v = raw("phh2o");
+      return v == null ? null : Math.round((v / 10) * 100) / 100;
+    })(),
+    soc: pct("soc"), // g/kg → already ~ "g/kg ÷ 10" then expressed as g/kg; agronomically use as g/kg
+  };
+}
+
+function classifySoil(clay: number | null, sand: number | null, silt: number | null): string {
+  if (clay == null && sand == null && silt == null) return "Неизвестна";
+  if ((clay ?? 0) > 40) return "Глинеста";
+  if ((sand ?? 0) > 70) return "Песъчлива";
+  if ((silt ?? 0) > 50) return "Льосова";
+  return "Средна (loam)";
+}
+
+function bboxOf(geom: GeoJSON.Polygon): [number, number, number, number] {
+  const ring = geom.coordinates[0] as [number, number][];
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+  for (const [x, y] of ring) {
+    if (x < minLon) minLon = x;
+    if (x > maxLon) maxLon = x;
+    if (y < minLat) minLat = y;
+    if (y > maxLat) maxLat = y;
+  }
+  return [minLon, minLat, maxLon, maxLat];
 }
 
 // OpenTopography Global DEM API — returns elevation in meters.
@@ -124,17 +163,54 @@ export const Route = createFileRoute("/api/enrich-soil")({
           }
           const { lat, lon } = centroid;
 
-          const [soil, topo] = await Promise.all([
-            fetchSoilGrids(lat, lon).catch(() => ({ sand: null, clay: null, silt: null })),
+          // Sample 3 points: centroid + bbox top-left + bbox bottom-right.
+          const [minLon, minLat, maxLon, maxLat] = bboxOf(geom);
+          const samplePts = [
+            { name: "centroid", lat, lon },
+            { name: "top-left", lat: maxLat, lon: minLon },
+            { name: "bottom-right", lat: minLat, lon: maxLon },
+          ];
+          const [topo, ...soilSamples] = await Promise.all([
             fetchSlope(lat, lon).catch(() => ({ slope: null, aspect: null, elevation: null })),
+            ...samplePts.map((p) =>
+              fetchSoilGridsAt(p.lat, p.lon).catch(() => ({
+                sand: null, clay: null, silt: null, ph: null, soc: null,
+              })),
+            ),
           ]);
 
-          const awc_mm = computeAWCmm(soil.sand, soil.clay);
+          // Classify each sample, build the soil_type label.
+          const types = soilSamples.map((s) => classifySoil(s.clay, s.sand, s.silt));
+          const uniqueTypes = Array.from(new Set(types.filter((t) => t !== "Неизвестна")));
+          const soil_type =
+            uniqueTypes.length === 0
+              ? "Неизвестна"
+              : uniqueTypes.length === 1
+                ? uniqueTypes[0]
+                : `Смесена: ${uniqueTypes.join(" + ")}`;
+
+          // Average non-null values across samples for texture/ph/soc.
+          const avg = (vals: Array<number | null>) => {
+            const v = vals.filter((x): x is number => typeof x === "number");
+            if (v.length === 0) return null;
+            return v.reduce((a, b) => a + b, 0) / v.length;
+          };
+          const sand = avg(soilSamples.map((s) => s.sand));
+          const clay = avg(soilSamples.map((s) => s.clay));
+          const silt = avg(soilSamples.map((s) => s.silt));
+          const ph = avg(soilSamples.map((s) => s.ph));
+          const soc = avg(soilSamples.map((s) => s.soc));
+
+          const awc_mm = computeAWCmm(sand, clay);
 
           const update = {
-            soil_sand_pct: soil.sand,
-            soil_clay_pct: soil.clay,
-            soil_silt_pct: soil.silt,
+            soil_sand_pct: sand,
+            soil_clay_pct: clay,
+            soil_silt_pct: silt,
+            soil_type,
+            soil_ph: ph == null ? null : Number(ph.toFixed(2)),
+            soil_organic_carbon: soc == null ? null : Number(soc.toFixed(2)),
+            soil_data_raw: { samples: samplePts.map((p, i) => ({ ...p, ...soilSamples[i], type: types[i] })) },
             awc_mm,
             slope_deg: topo.slope,
             aspect_deg: topo.aspect,

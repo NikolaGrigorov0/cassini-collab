@@ -323,9 +323,13 @@ export type Database = {
           pump_flow_m3h: number | null
           slope_deg: number | null
           soil_clay_pct: number | null
+          soil_data_raw: Json | null
           soil_enriched_at: string | null
+          soil_organic_carbon: number | null
+          soil_ph: number | null
           soil_sand_pct: number | null
           soil_silt_pct: number | null
+          soil_type: string | null
           user_id: string
         }
         Insert: {
@@ -342,9 +346,13 @@ export type Database = {
           pump_flow_m3h?: number | null
           slope_deg?: number | null
           soil_clay_pct?: number | null
+          soil_data_raw?: Json | null
           soil_enriched_at?: string | null
+          soil_organic_carbon?: number | null
+          soil_ph?: number | null
           soil_sand_pct?: number | null
           soil_silt_pct?: number | null
+          soil_type?: string | null
           user_id: string
         }
         Update: {
@@ -361,9 +369,13 @@ export type Database = {
           pump_flow_m3h?: number | null
           slope_deg?: number | null
           soil_clay_pct?: number | null
+          soil_data_raw?: Json | null
           soil_enriched_at?: string | null
+          soil_organic_carbon?: number | null
+          soil_ph?: number | null
           soil_sand_pct?: number | null
           soil_silt_pct?: number | null
+          soil_type?: string | null
           user_id?: string
         }
         Relationships: []

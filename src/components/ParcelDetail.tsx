@@ -24,6 +24,7 @@ import { WateringLog } from "@/components/WateringLog";
 import { SoilBalanceChart } from "@/components/SoilBalanceChart";
 import { ParcelHistoryDialog } from "@/components/ParcelHistoryDialog";
 import { WeatherForecast } from "@/components/WeatherForecast";
+import { SoilInfoCard } from "@/components/SoilInfoCard";
 
 export interface LiveParcelData {
   ndmi: number;
@@ -58,6 +59,12 @@ interface ParcelDetailProps {
   onCancelEdit?: () => void;
   /** True while save is in progress. */
   saving?: boolean;
+  /** Soil data fetch in progress. */
+  soilLoading?: boolean;
+  /** Error from the soil enrichment endpoint. */
+  soilError?: string | null;
+  /** Open the edit-everything modal (name/crop/phase/area). */
+  onEditDetails?: () => void;
 }
 
 function IndexBar({ value, label }: { value: number; label: string }) {
@@ -113,7 +120,7 @@ function MockForecastChart({ data, areaHectares }: { data: MockParcel["forecast"
   );
 }
 
-export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false }: ParcelDetailProps) {
+export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false, soilLoading = false, soilError = null, onEditDetails }: ParcelDetailProps) {
   // Prefer live data when present; otherwise fall back to whatever was on the parcel.
   const ndmi = liveData?.ndmi ?? parcel.ndmi;
   const ndvi = liveData?.ndvi ?? parcel.ndvi;
@@ -154,6 +161,18 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             <div className="flex items-center gap-2">
               <span className="text-2xl">{CROP_ICONS[parcel.crop_type]}</span>
               <h2 className="text-lg font-bold">{parcel.name}</h2>
+              {onEditDetails && !isEditing && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={onEditDetails}
+                  aria-label="Редактирай парцела"
+                  title="Редактирай парцела"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </div>
             <div className="mt-1 text-sm text-muted-foreground">
               {CROP_LABELS[parcel.crop_type]} ·{" "}
@@ -341,6 +360,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             growthPhase={parcel.growth_phase}
             currentNDMI={ndmi}
             recommendedDoseMM={dose}
+            soilType={parcel.soil_type ?? null}
           />
 
           {/* Rain logging stays separate */}
@@ -356,6 +376,15 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             parcelId={parcel.id}
             cropType={parcel.crop_type}
             growthPhase={parcel.growth_phase}
+          />
+
+          {/* ISRIC SoilGrids — soil type, pH, organic carbon, retention */}
+          <SoilInfoCard
+            soilType={parcel.soil_type}
+            soilPh={parcel.soil_ph}
+            soilOrganicCarbon={parcel.soil_organic_carbon}
+            loading={soilLoading}
+            error={soilError}
           />
 
           {/* Forecast */}

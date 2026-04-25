@@ -23,6 +23,19 @@ export interface CorrectionResult {
 const NDMI_PER_10MM = 0.06;
 const FIELD_CAPACITY_NDMI = 0.45;
 
+/** Per-soil-type multiplier for the NDMI lift caused by irrigation.
+ *  Sandy drains faster (less retained water → smaller NDMI gain).
+ *  Clay retains more (bigger NDMI gain). Loam = baseline. */
+function soilMultiplier(soilType?: string | null): number {
+  if (!soilType) return 1.0;
+  const s = soilType.toLowerCase();
+  if (s.includes("песъ")) return 0.8;   // sandy
+  if (s.includes("глин")) return 1.2;   // clay
+  if (s.includes("льос")) return 1.05;  // loess
+  if (s.startsWith("смесена")) return 1.05; // mixed
+  return 1.0;                            // loam / unknown
+}
+
 export function recalculateAfterIrrigation(
   currentNDMI: number,
   doseMM: number,
@@ -30,8 +43,9 @@ export function recalculateAfterIrrigation(
   _cropType: string,
   _growthPhase: string,
   originalDoseMM = 0,
+  soilType?: string | null,
 ): CorrectionResult {
-  const lift = (doseMM / 10) * NDMI_PER_10MM;
+  const lift = (doseMM / 10) * NDMI_PER_10MM * soilMultiplier(soilType);
   const correctedNDMI = Math.min(FIELD_CAPACITY_NDMI, currentNDMI + lift);
 
   // Use the *original* recommended dose as the baseline for follow-up actions
