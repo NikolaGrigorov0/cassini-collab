@@ -123,6 +123,14 @@ function MockForecastChart({ data, areaHectares }: { data: MockParcel["forecast"
   );
 }
 
+function tryParseJson(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false, soilLoading = false, soilError = null, onEditDetails, onRetrySoil }: ParcelDetailProps) {
   const [soilDebugLoading, setSoilDebugLoading] = useState(false);
   const [soilDebugRaw, setSoilDebugRaw] = useState<string | null>(null);
