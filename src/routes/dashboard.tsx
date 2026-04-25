@@ -42,6 +42,11 @@ type ParcelRow = {
   geometry: string;
   pump_flow_m3h: number | null;
   soil_type: string | null;
+  soil_type_wrb: string | null;
+  soil_type_bg: string | null;
+  soil_fc_pct: number | null;
+  soil_wp_pct: number | null;
+  soil_awc_pct: number | null;
   soil_ph: number | null;
   soil_organic_carbon: number | null;
   soil_clay_pct: number | null;
@@ -118,7 +123,7 @@ function Dashboard() {
       setLoadingData(true);
       const { data: p, error } = await supabase
         .from("parcels")
-        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h, soil_type, soil_ph, soil_organic_carbon, soil_clay_pct, soil_sand_pct, soil_silt_pct")
+        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h, soil_type, soil_type_wrb, soil_type_bg, soil_fc_pct, soil_wp_pct, soil_awc_pct, soil_ph, soil_organic_carbon, soil_clay_pct, soil_sand_pct, soil_silt_pct")
         .order("created_at", { ascending: false });
       if (error) {
         toast.error(error.message);
@@ -181,6 +186,11 @@ function Dashboard() {
           forecast: [],
           pump_flow_m3h: row.pump_flow_m3h,
           soil_type: row.soil_type,
+          soil_type_wrb: row.soil_type_wrb,
+          soil_type_bg: row.soil_type_bg,
+          soil_fc_pct: row.soil_fc_pct == null ? null : Number(row.soil_fc_pct),
+          soil_wp_pct: row.soil_wp_pct == null ? null : Number(row.soil_wp_pct),
+          soil_awc_pct: row.soil_awc_pct == null ? null : Number(row.soil_awc_pct),
           soil_ph: row.soil_ph == null ? null : Number(row.soil_ph),
           soil_organic_carbon: row.soil_organic_carbon == null ? null : Number(row.soil_organic_carbon),
           soil_clay_pct: row.soil_clay_pct == null ? null : Number(row.soil_clay_pct),
