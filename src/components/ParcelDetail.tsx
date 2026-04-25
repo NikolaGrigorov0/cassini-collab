@@ -69,6 +69,16 @@ interface ParcelDetailProps {
   onEditDetails?: () => void;
   /** Retry soil enrichment from the dashboard. */
   onRetrySoil?: () => void;
+  /** Patch the cached liveData for this parcel after a "Полях днес" confirm/undo. */
+  onIrrigationChange?: (patch: {
+    ndmi: number;
+    dose_mm: number;
+    status: "green" | "yellow" | "red";
+    reason: string;
+    forecastTransform: (
+      prev: { date: string; dose_mm: number; status: "green" | "yellow" | "red" }[],
+    ) => { date: string; dose_mm: number; status: "green" | "yellow" | "red" }[];
+  }) => void;
 }
 
 function IndexBar({ value, label }: { value: number; label: string }) {
@@ -124,7 +134,7 @@ function MockForecastChart({ data, areaHectares }: { data: MockParcel["forecast"
   );
 }
 
-export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false, soilLoading = false, soilError = null, onEditDetails, onRetrySoil }: ParcelDetailProps) {
+export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false, soilLoading = false, soilError = null, onEditDetails, onRetrySoil, onIrrigationChange }: ParcelDetailProps) {
   const { t } = useTranslation();
   // Prefer live data when present; otherwise fall back to whatever was on the parcel.
   const ndmi = liveData?.ndmi ?? parcel.ndmi;
