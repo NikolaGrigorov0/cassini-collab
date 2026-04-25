@@ -141,3 +141,30 @@
 
 /* MapLibre overrides */
 .maplibregl-ctrl-attrib { font-size: 10px; }
+
+/* Pulsing marker for searched location */
+.aqua-pulse-marker {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.aqua-pulse-marker .aqua-pulse-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #16a34a;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.aqua-pulse-marker .aqua-pulse-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  background: rgba(34,197,94,0.45);
+  animation: aqua-pulse 1.6s ease-out infinite;
+}
+@keyframes aqua-pulse {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
