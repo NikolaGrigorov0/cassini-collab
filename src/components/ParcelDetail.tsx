@@ -202,6 +202,17 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           </Button>
         </div>
 
+        {/* Missing-boundary warning */}
+        {(() => {
+          const ring = parcel.geometry?.coordinates?.[0] as [number, number][] | undefined;
+          if (ring && ring.length >= 3) return null;
+          return (
+            <div className="border-b border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900">
+              ⚠ Границите на парцела не са нанесени. Редактирай парцела за да добавиш граници.
+            </div>
+          );
+        })()}
+
         {/* Edit-mode action bar — sticky at top of panel */}
         {isEditing && (
           <div className="sticky top-[72px] z-10 border-b-2 border-amber-400 bg-amber-50 px-4 py-3 shadow-sm">

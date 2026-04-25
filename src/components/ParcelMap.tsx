@@ -64,6 +64,10 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
   const [, forceRender] = useState(0);
   const [baseLayer, setBaseLayer] = useState<BaseLayer>("satellite");
   const [showBatteries, setShowBatteries] = useState(true);
+  // Stores a parcel id requested before the map finished loading.
+  const pendingSelectRef = useRef<string | null>(null);
+  // Active pulse animation handle (so we can cancel when selection changes).
+  const pulseRafRef = useRef<number | null>(null);
   // Trigger re-render so the ParcelEditor JSX has access to the live map ref.
   useEffect(() => {
     if (mapRef.current) forceRender((n) => n + 1);
@@ -134,7 +138,9 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
                   0.5, "#064e3b",
                 ]
               : ["get", "color"],
-            "fill-opacity": baseLayer === "ndvi" ? ["case", ["==", ["get", "selected"], 1], 0.0, 0.25] : ["case", ["==", ["get", "selected"], 1], 0.55, 0.35],
+            "fill-opacity": baseLayer === "ndvi"
+              ? ["case", ["==", ["get", "selected"], 1], 0.0, 0.25]
+              : ["case", ["==", ["get", "selected"], 1], 0.5, 0.2],
           },
         });
         map.addLayer({
@@ -142,9 +148,9 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
           type: "line",
           source: "parcels",
           paint: {
-            "line-color": baseLayer === "ndvi" ? "#0f172a" : ["get", "color"],
-            "line-width": ["case", ["==", ["get", "selected"], 1], 4, 2.5],
-            "line-opacity": 1,
+            "line-color": ["case", ["==", ["get", "selected"], 1], "#ffffff", baseLayer === "ndvi" ? "#0f172a" : ["get", "color"]],
+            "line-width": ["case", ["==", ["get", "selected"], 1], 3, 2.5],
+            "line-opacity": ["case", ["==", ["get", "selected"], 1], 1, 0.4],
           },
         });
         map.on("click", "parcels-fill", (e) => {
@@ -206,7 +212,9 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
                   0.5, "#064e3b",
                 ]
               : ["get", "color"],
-            "fill-opacity": baseLayer === "ndvi" ? ["case", ["==", ["get", "selected"], 1], 0.0, 0.25] : ["case", ["==", ["get", "selected"], 1], 0.55, 0.35],
+            "fill-opacity": baseLayer === "ndvi"
+              ? ["case", ["==", ["get", "selected"], 1], 0.0, 0.25]
+              : ["case", ["==", ["get", "selected"], 1], 0.5, 0.2],
           },
         });
         map.addLayer({
@@ -214,9 +222,9 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
           type: "line",
           source: "parcels",
           paint: {
-            "line-color": baseLayer === "ndvi" ? "#0f172a" : ["get", "color"],
-            "line-width": ["case", ["==", ["get", "selected"], 1], 4, 2.5],
-            "line-opacity": 1,
+            "line-color": ["case", ["==", ["get", "selected"], 1], "#ffffff", baseLayer === "ndvi" ? "#0f172a" : ["get", "color"]],
+            "line-width": ["case", ["==", ["get", "selected"], 1], 3, 2.5],
+            "line-opacity": ["case", ["==", ["get", "selected"], 1], 1, 0.4],
           },
         });
 
@@ -236,47 +244,96 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
     else map.once("load", apply);
   }, [parcels, selectedId, baseLayer, editingParcelId]);
 
-  // Fly to selected parcel — uses the same flyTo mechanism as the city
-  // search so the camera smoothly travels to the parcel's centroid.
+  // Fly to selected parcel — fits the parcel bbox with right-padding so
+  // the geometry is centered in the visible area (not hidden behind the
+  // detail side panel). Also animates a 2-second pulse on the outline.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedId) return;
     const parcel = parcels.find((p) => p.id === selectedId);
     const ring = parcel?.geometry?.coordinates?.[0] as [number, number][] | undefined;
-    if (!ring || ring.length < 3) return;
+    if (!ring || ring.length < 3) {
+      // No drawn boundary — remember the request but don't move the map.
+      pendingSelectRef.current = null;
+      return;
+    }
 
-    // Centroid of the polygon ring.
-    const cx = ring.reduce((s, c) => s + c[0], 0) / ring.length;
-    const cy = ring.reduce((s, c) => s + c[1], 0) / ring.length;
-
-    // Pick a zoom that frames the parcel; bigger parcels → lower zoom.
-    const lons = ring.map((c) => c[0]);
-    const lats = ring.map((c) => c[1]);
-    const span = Math.max(
-      Math.max(...lons) - Math.min(...lons),
-      Math.max(...lats) - Math.min(...lats),
+    // Compute bbox.
+    let minLon = ring[0][0], maxLon = ring[0][0];
+    let minLat = ring[0][1], maxLat = ring[0][1];
+    for (const [lon, lat] of ring) {
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    }
+    // Approx span in km (1° lat ≈ 111 km).
+    const spanKm = Math.max(
+      (maxLat - minLat) * 111,
+      (maxLon - minLon) * 111 * Math.cos((minLat + maxLat) / 2 * Math.PI / 180),
     );
-    const targetZoom = span > 0.05 ? 12 : span > 0.01 ? 14 : span > 0.003 ? 15 : 16;
+    const maxZoom = spanKm > 50 ? 10 : 17;
 
-    const fly = () => {
-      console.log("[map.flyTo] parcel click", {
+    const fitAndPulse = () => {
+      console.log("[map.fitBounds] parcel click", {
         parcelId: selectedId,
         parcelName: parcel?.name,
-        ringPoints: ring.length,
-        centroid: { lon: cx, lat: cy },
-        span,
-        targetZoom,
+        bbox: [minLon, minLat, maxLon, maxLat],
+        spanKm,
+        maxZoom,
       });
-      map.flyTo({
-        center: [cx, cy],
-        zoom: targetZoom,
-        speed: 1.5,
-        curve: 1.4,
-        essential: true,
-      });
+      map.fitBounds(
+        [[minLon, minLat], [maxLon, maxLat]],
+        {
+          padding: { top: 100, bottom: 100, left: 60, right: 480 },
+          duration: 900,
+          maxZoom,
+        },
+      );
+
+      // Pulse the outline of the selected parcel for 2s.
+      if (pulseRafRef.current != null) cancelAnimationFrame(pulseRafRef.current);
+      const start = performance.now();
+      const DURATION = 2000;
+      const tick = (now: number) => {
+        const t = (now - start) / DURATION;
+        if (!map.getLayer("parcels-outline")) return;
+        if (t >= 1) {
+          // End of pulse: restore default (selected = 3).
+          map.setPaintProperty("parcels-outline", "line-width", [
+            "case", ["==", ["get", "selected"], 1], 3, 2.5,
+          ]);
+          pulseRafRef.current = null;
+          return;
+        }
+        // 3 → 7 → 3 with two cycles.
+        const wave = Math.abs(Math.sin(t * Math.PI * 2));
+        const pulseW = 3 + wave * 4;
+        map.setPaintProperty("parcels-outline", "line-width", [
+          "case", ["==", ["get", "selected"], 1], pulseW, 2.5,
+        ]);
+        pulseRafRef.current = requestAnimationFrame(tick);
+      };
+      pulseRafRef.current = requestAnimationFrame(tick);
     };
-    if (map.isStyleLoaded()) fly();
-    else map.once("load", fly);
+
+    if (map.isStyleLoaded()) fitAndPulse();
+    else {
+      pendingSelectRef.current = selectedId;
+      map.once("load", () => {
+        if (pendingSelectRef.current === selectedId) {
+          pendingSelectRef.current = null;
+          fitAndPulse();
+        }
+      });
+    }
+
+    return () => {
+      if (pulseRafRef.current != null) {
+        cancelAnimationFrame(pulseRafRef.current);
+        pulseRafRef.current = null;
+      }
+    };
   }, [selectedId, parcels, editingParcelId]);
 
   // External fly-to (e.g. from MapPlaceSearch) — uses flyTo with smooth curve.
