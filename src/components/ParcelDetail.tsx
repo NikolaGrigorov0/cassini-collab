@@ -360,6 +360,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             growthPhase={parcel.growth_phase}
             currentNDMI={ndmi}
             recommendedDoseMM={dose}
+            soilType={parcel.soil_type ?? null}
           />
 
           {/* Rain logging stays separate */}
