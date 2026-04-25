@@ -77,6 +77,8 @@ function Dashboard() {
   const [soilErrorByParcel, setSoilErrorByParcel] = useState<Record<string, string>>({});
   const [soilRetryNonce, setSoilRetryNonce] = useState(0);
   const [editDetailsId, setEditDetailsId] = useState<string | null>(null);
+  // Fly-to target for parcel sidebar click (mirrors the city-search pattern).
+  const [flyToParcelTarget, setFlyToParcelTarget] = useState<{ lat: number; lon: number; zoom: number; nonce: number } | null>(null);
 
   // Deficit mode
   const [deficitModalOpen, setDeficitModalOpen] = useState(false);
@@ -582,7 +584,33 @@ function Dashboard() {
                   return (
                     <li key={p.id} ref={(el) => { listItemRefs.current[p.id] = el; }}>
                       <button
-                        onClick={() => { setSelectedId(p.id); setSidebarOpen(false); }}
+                        onClick={() => {
+                          setSelectedId(p.id);
+                          setSidebarOpen(false);
+                          // Compute centroid + adaptive zoom from the polygon, then ask
+                          // the map to flyTo it (same mechanism as city search).
+                          const r = p.geometry?.coordinates?.[0] as [number, number][] | undefined;
+                          if (r && r.length >= 3) {
+                            let minLon = r[0][0], maxLon = r[0][0], minLat = r[0][1], maxLat = r[0][1];
+                            for (const [lon, lat] of r) {
+                              if (lon < minLon) minLon = lon;
+                              if (lon > maxLon) maxLon = lon;
+                              if (lat < minLat) minLat = lat;
+                              if (lat > maxLat) maxLat = lat;
+                            }
+                            const spanKm = Math.max(
+                              (maxLat - minLat) * 111,
+                              (maxLon - minLon) * 111 * Math.cos(((minLat + maxLat) / 2) * Math.PI / 180),
+                            );
+                            const zoom = spanKm > 50 ? 10 : spanKm > 5 ? 12 : spanKm > 1 ? 14 : spanKm > 0.3 ? 15 : 16;
+                            setFlyToParcelTarget({
+                              lat: (minLat + maxLat) / 2,
+                              lon: (minLon + maxLon) / 2,
+                              zoom,
+                              nonce: Date.now(),
+                            });
+                          }
+                        }}
                         className={`w-full rounded-xl border p-3 text-left transition ${
                           active
                             ? "border-l-[3px] border-l-emerald-600 border-y border-r border-y-emerald-200 border-r-emerald-200 bg-emerald-50 shadow-card"
@@ -686,6 +714,7 @@ function Dashboard() {
             }}
             editingParcelId={editingId}
             hidePlaceSearch={!!editingId}
+            flyToParcelTarget={flyToParcelTarget}
             onEditingGeometryChange={(g, ha) => {
               setDraftGeometry(g);
               setDraftAreaHa(ha);
