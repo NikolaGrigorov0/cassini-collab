@@ -21,6 +21,7 @@ import { ForecastChart, type ForecastDay } from "@/components/ForecastChart";
 import { WaterBattery, ndmiToMoisturePct } from "@/components/WaterBattery";
 import { convertWater, formatHours, formatPerDka, formatTotal, pumpRuntimeHours } from "@/lib/waterUnits";
 import { PhenophaseTimeline } from "@/components/PhenophaseTimeline";
+import { GrowthPhaseIndicator } from "@/components/GrowthPhaseIndicator";
 import { QuickIrrigationActions } from "@/components/QuickIrrigationActions";
 import { WateringLog } from "@/components/WateringLog";
 import { SoilBalanceChart } from "@/components/SoilBalanceChart";
@@ -212,6 +213,15 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("parcelDetail.close")}>
             <X className="h-5 w-5" />
           </Button>
+        </div>
+
+        {/* Growth phase indicator — directly below header */}
+        <div className="border-b border-border bg-card/50 px-4 py-3">
+          <GrowthPhaseIndicator
+            cropType={parcel.crop_type}
+            growthPhase={parcel.growth_phase}
+            onChangePhase={onEditDetails}
+          />
         </div>
 
         {/* Missing-boundary warning */}
