@@ -117,12 +117,23 @@ export const Route = createFileRoute("/api/fetch-ndmi")({
               finalDose = corr.newDose;
               finalStatus = corr.newStatus;
               finalReason = `${prefix}${corr.newReason}`;
-              finalForecast = recomputeForecast(
-                finalForecast,
+              const updated = recomputeForecast(
+                finalForecast.map((d) => ({
+                  date: d.date,
+                  dose_mm: d.dose_mm,
+                  status: d.status as "green" | "yellow" | "red",
+                })),
                 ndmiBefore,
                 corr.correctedNDMI,
                 baselineDose,
               );
+              // Preserve meteo fields (etc_mm, eto_mm, rain_mm, temp_c) by
+              // merging the recomputed dose/status back into the original days.
+              finalForecast = finalForecast.map((d, i) => ({
+                ...d,
+                dose_mm: updated[i]?.dose_mm ?? d.dose_mm,
+                status: updated[i]?.status ?? d.status,
+              }));
             }
           }
 
