@@ -1,0 +1,223 @@
+{
+  "common": {
+    "loading": "Lädt…",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "back": "Zurück",
+    "next": "Weiter",
+    "close": "Schließen",
+    "yes": "Ja",
+    "no": "Nein",
+    "error": "Fehler",
+    "retry": "Erneut",
+    "language": "Sprache"
+  },
+  "landing": {
+    "nav": {
+      "demo": "Demo",
+      "login": "Anmelden",
+      "tryIt": "Ausprobieren"
+    },
+    "hero": {
+      "badge": "Powered by Copernicus Sentinel-2",
+      "title1": "Smart bewässern.",
+      "title2": "Wasser sparen.",
+      "subtitle": "Copernicus-Satellitendaten + FAO-56 = exakte Bewässerungsdosis für deinen Schlag",
+      "ctaPrimary": "Jetzt testen",
+      "ctaSecondary": "Demo-Tour ansehen"
+    },
+    "stats": {
+      "s1Label": "of the world's water goes to agriculture",
+      "s2Value": "up to 35%",
+      "s2Label": "water savings with HydroLand",
+      "s3Label": "Sentinel-2 resolution"
+    },
+    "how": {
+      "title": "So funktioniert's",
+      "subtitle": "Three simple steps to the right amount of water",
+      "step": "Schritt",
+      "s1Title": "Map your field",
+      "s1Desc": "Draw your field on the map in less than a minute.",
+      "s2Title": "Satellite analyzes it",
+      "s2Desc": "Sentinel-2 reads NDMI every 5 days — for free.",
+      "s3Title": "Get the precise dose",
+      "s3Desc": "Exact millimeters of water for this week — by FAO-56."
+    },
+    "crops": {
+      "title": "Unterstützte Kulturen",
+      "subtitle": "Calibrated by FAO-56 for every crop type"
+    }
+  },
+  "auth": {
+    "loginTitle": "Bei HydroLand anmelden",
+    "signupTitle": "Konto erstellen",
+    "loginSubtitle": "Sign in to see your fields",
+    "signupSubtitle": "Start saving water today",
+    "continueWithGoogle": "Mit Google fortfahren",
+    "orWithEmail": "oder per E-Mail",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "submitLogin": "Anmelden",
+    "submitSignup": "Registrieren",
+    "submitting": "Please wait…",
+    "noAccount": "No account?",
+    "hasAccount": "Already have an account?",
+    "backHome": "← Back home",
+    "createdToast": "Account created! Signing in…",
+    "welcomeToast": "Welcome back!",
+    "googleError": "Google sign-in failed",
+    "genericError": "Error"
+  },
+  "dashboard": {
+    "topbar": {
+      "menu": "Menu",
+      "realtimeOn": "Realtime connected",
+      "realtimeOff": "Offline mode",
+      "logout": "Sign out"
+    },
+    "deficitBanner": {
+      "active": "Water deficit active",
+      "viewSchedule": "View schedule",
+      "deactivate": "Deactivate"
+    },
+    "demoBanner": {
+      "title": "Your dashboard",
+      "text": "— add a field and get real satellite recommendations every 5 days",
+      "close": "Close banner"
+    },
+    "sidebar": {
+      "title": "My fields",
+      "search": "Search by name, crop or status…",
+      "clear": "Clear",
+      "empty": "You have no fields yet. Add your first one!",
+      "noMatch": "No fields match \"{{q}}\".",
+      "onMap": "On the map →",
+      "noBoundary": "No boundary",
+      "fullDose": "Full dose",
+      "skipped": "Skipped",
+      "reduced": "Reduced",
+      "stats": "Statistics",
+      "totalParcels": "Total fields",
+      "savedWater": "Water saved",
+      "co2": "CO₂ reduction",
+      "deficit": "Water deficit",
+      "addParcel": "Add field",
+      "shortcutHint": "Press {{key}} for quick access"
+    },
+    "tooltipClickParcel": "Click a field on the map for details",
+    "toasts": {
+      "deficitGenerated": "Deficit irrigation schedule generated",
+      "deficitOff": "Water deficit mode turned off",
+      "ndmiFailed": "Failed to load satellite data"
+    },
+    "noAnalysisYet": "No analysis yet. First satellite check coming soon.",
+    "soilUnavailable": "Soil data temporarily unavailable.",
+    "unsavedConfirm": "You have unsaved changes. Are you sure?"
+  },
+  "addParcel": {
+    "headTitle": "Add field",
+    "stepOf": "Step {{step}} of {{total}}",
+    "back": "Back",
+    "step1": {
+      "title": "Step 1: Draw the field",
+      "hint": "Click to add vertices, double-click to finish.",
+      "draw": "Draw field",
+      "drawing": "Drawing…",
+      "placeFound": "— Find your field and draw its boundary",
+      "area": "Area:",
+      "areaHa": "ha",
+      "next": "Next"
+    },
+    "step2": {
+      "title": "Crop details",
+      "subtitle": "This information configures the FAO-56 calculation for your field.",
+      "name": "Field name",
+      "namePlaceholder": "Field near Plovdiv",
+      "crop": "Crop type",
+      "phase": "Growth stage",
+      "pump": "Pump flow rate (m³/h)",
+      "pumpOptional": "— optional",
+      "pumpPlaceholder": "e.g. 6",
+      "pumpHelp": "Used to calculate how many hours the pump must run for the recommended dose.",
+      "preview": "Preview",
+      "newParcel": "New field",
+      "firstAnalysis": "First satellite analysis:",
+      "save": "Save field",
+      "saving": "Saving…"
+    },
+    "errors": {
+      "needName": "Enter a field name",
+      "needPolygon": "Draw a field",
+      "needLogin": "Please sign in to your account"
+    },
+    "saved": "Field saved"
+  },
+  "parcelDetail": {
+    "edit": "Edit field",
+    "close": "Close",
+    "missingBoundary": "⚠ This field has no boundary. Edit the field to add one.",
+    "editingTitle": "Editing field shape",
+    "saveChanges": "Save changes",
+    "cancel": "Cancel",
+    "editingHint": "Drag corners to reshape · click an edge to add a corner · double-click to delete a corner.",
+    "loadingSat": "Loading latest satellite data…",
+    "thisWeek": "this week",
+    "updatedJustNow": "Updated just now",
+    "rainfallLast7": "rainfall last 7 days:",
+    "updatedAgo": "Updated {{n}} {{unit}} ago",
+    "day": "day",
+    "days": "days",
+    "satIndices": "Satellite indices",
+    "sarIndices": "Radar indices",
+    "ndmi": "NDMI (moisture)",
+    "ndvi": "NDVI (vegetation)",
+    "sarHumidity": "SAR moisture (VH/VV)",
+    "measuredFrom": "Measured by Sentinel-2, {{n}} {{unit}} ago",
+    "source": "Source:",
+    "convertedTitle": "Converted to liters and cubic meters",
+    "wholeParcel": "For the whole field",
+    "pumpRuntime": "Pump",
+    "pumpRuntimeWork": "→ runtime",
+    "addPumpHint": "Add a pump flow rate in settings to see runtime estimates.",
+    "shareCopied": "Recommendation copied",
+    "shareFailed": "Copy failed",
+    "indexBad": "Bad",
+    "indexNormal": "Normal",
+    "indexGood": "Good"
+  },
+  "crops": {
+    "wheat": "Weizen",
+    "corn": "Mais",
+    "tomatoes": "Tomaten",
+    "sunflower": "Sonnenblume",
+    "vineyard": "Weinberg"
+  },
+  "phases": {
+    "initial": "Initial",
+    "development": "Development",
+    "mid": "Mid-season",
+    "late": "Late-season"
+  },
+  "status": {
+    "green": "No irrigation",
+    "yellow": "Moderate irrigation",
+    "red": "Urgent irrigation"
+  },
+  "units": {
+    "ha": "ha",
+    "dka": "dka",
+    "m3": "m³",
+    "liters": "L",
+    "mm": "mm"
+  },
+  "search": {
+    "placeholder": "Search a place…",
+    "unavailable": "Search temporarily unavailable. Locate your field manually on the map."
+  },
+  "languageSelector": {
+    "title": "App language",
+    "autoDetected": "Auto-detected"
+  }
+}
