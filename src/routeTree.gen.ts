@@ -9,38 +9,203 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DemoRouteImport } from './routes/demo'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AddParcelRouteImport } from './routes/add-parcel'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiParcelMoistureRasterRouteImport } from './routes/api.parcel-moisture-raster'
+import { Route as ApiFetchNdmiRouteImport } from './routes/api.fetch-ndmi'
+import { Route as ApiEnrichSoilRouteImport } from './routes/api.enrich-soil'
+import { Route as ApiPublicHooksRefreshRecommendationsRouteImport } from './routes/api.public.hooks.refresh-recommendations'
+import { Route as ApiPublicHooksRecalcParcelRouteImport } from './routes/api.public.hooks.recalc-parcel'
+import { Route as ApiPublicHooksDailySoilBalanceRouteImport } from './routes/api.public.hooks.daily-soil-balance'
 
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AddParcelRoute = AddParcelRouteImport.update({
+  id: '/add-parcel',
+  path: '/add-parcel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiParcelMoistureRasterRoute = ApiParcelMoistureRasterRouteImport.update({
+  id: '/api/parcel-moisture-raster',
+  path: '/api/parcel-moisture-raster',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFetchNdmiRoute = ApiFetchNdmiRouteImport.update({
+  id: '/api/fetch-ndmi',
+  path: '/api/fetch-ndmi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEnrichSoilRoute = ApiEnrichSoilRouteImport.update({
+  id: '/api/enrich-soil',
+  path: '/api/enrich-soil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksRefreshRecommendationsRoute =
+  ApiPublicHooksRefreshRecommendationsRouteImport.update({
+    id: '/api/public/hooks/refresh-recommendations',
+    path: '/api/public/hooks/refresh-recommendations',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksRecalcParcelRoute =
+  ApiPublicHooksRecalcParcelRouteImport.update({
+    id: '/api/public/hooks/recalc-parcel',
+    path: '/api/public/hooks/recalc-parcel',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksDailySoilBalanceRoute =
+  ApiPublicHooksDailySoilBalanceRouteImport.update({
+    id: '/api/public/hooks/daily-soil-balance',
+    path: '/api/public/hooks/daily-soil-balance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/add-parcel': typeof AddParcelRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
+  '/api/enrich-soil': typeof ApiEnrichSoilRoute
+  '/api/fetch-ndmi': typeof ApiFetchNdmiRoute
+  '/api/parcel-moisture-raster': typeof ApiParcelMoistureRasterRoute
+  '/api/public/hooks/daily-soil-balance': typeof ApiPublicHooksDailySoilBalanceRoute
+  '/api/public/hooks/recalc-parcel': typeof ApiPublicHooksRecalcParcelRoute
+  '/api/public/hooks/refresh-recommendations': typeof ApiPublicHooksRefreshRecommendationsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/add-parcel': typeof AddParcelRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
+  '/api/enrich-soil': typeof ApiEnrichSoilRoute
+  '/api/fetch-ndmi': typeof ApiFetchNdmiRoute
+  '/api/parcel-moisture-raster': typeof ApiParcelMoistureRasterRoute
+  '/api/public/hooks/daily-soil-balance': typeof ApiPublicHooksDailySoilBalanceRoute
+  '/api/public/hooks/recalc-parcel': typeof ApiPublicHooksRecalcParcelRoute
+  '/api/public/hooks/refresh-recommendations': typeof ApiPublicHooksRefreshRecommendationsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/add-parcel': typeof AddParcelRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
+  '/api/enrich-soil': typeof ApiEnrichSoilRoute
+  '/api/fetch-ndmi': typeof ApiFetchNdmiRoute
+  '/api/parcel-moisture-raster': typeof ApiParcelMoistureRasterRoute
+  '/api/public/hooks/daily-soil-balance': typeof ApiPublicHooksDailySoilBalanceRoute
+  '/api/public/hooks/recalc-parcel': typeof ApiPublicHooksRecalcParcelRoute
+  '/api/public/hooks/refresh-recommendations': typeof ApiPublicHooksRefreshRecommendationsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/add-parcel'
+    | '/auth'
+    | '/dashboard'
+    | '/demo'
+    | '/api/enrich-soil'
+    | '/api/fetch-ndmi'
+    | '/api/parcel-moisture-raster'
+    | '/api/public/hooks/daily-soil-balance'
+    | '/api/public/hooks/recalc-parcel'
+    | '/api/public/hooks/refresh-recommendations'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/add-parcel'
+    | '/auth'
+    | '/dashboard'
+    | '/demo'
+    | '/api/enrich-soil'
+    | '/api/fetch-ndmi'
+    | '/api/parcel-moisture-raster'
+    | '/api/public/hooks/daily-soil-balance'
+    | '/api/public/hooks/recalc-parcel'
+    | '/api/public/hooks/refresh-recommendations'
+  id:
+    | '__root__'
+    | '/'
+    | '/add-parcel'
+    | '/auth'
+    | '/dashboard'
+    | '/demo'
+    | '/api/enrich-soil'
+    | '/api/fetch-ndmi'
+    | '/api/parcel-moisture-raster'
+    | '/api/public/hooks/daily-soil-balance'
+    | '/api/public/hooks/recalc-parcel'
+    | '/api/public/hooks/refresh-recommendations'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AddParcelRoute: typeof AddParcelRoute
+  AuthRoute: typeof AuthRoute
+  DashboardRoute: typeof DashboardRoute
+  DemoRoute: typeof DemoRoute
+  ApiEnrichSoilRoute: typeof ApiEnrichSoilRoute
+  ApiFetchNdmiRoute: typeof ApiFetchNdmiRoute
+  ApiParcelMoistureRasterRoute: typeof ApiParcelMoistureRasterRoute
+  ApiPublicHooksDailySoilBalanceRoute: typeof ApiPublicHooksDailySoilBalanceRoute
+  ApiPublicHooksRecalcParcelRoute: typeof ApiPublicHooksRecalcParcelRoute
+  ApiPublicHooksRefreshRecommendationsRoute: typeof ApiPublicHooksRefreshRecommendationsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/add-parcel': {
+      id: '/add-parcel'
+      path: '/add-parcel'
+      fullPath: '/add-parcel'
+      preLoaderRoute: typeof AddParcelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +213,64 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/parcel-moisture-raster': {
+      id: '/api/parcel-moisture-raster'
+      path: '/api/parcel-moisture-raster'
+      fullPath: '/api/parcel-moisture-raster'
+      preLoaderRoute: typeof ApiParcelMoistureRasterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fetch-ndmi': {
+      id: '/api/fetch-ndmi'
+      path: '/api/fetch-ndmi'
+      fullPath: '/api/fetch-ndmi'
+      preLoaderRoute: typeof ApiFetchNdmiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/enrich-soil': {
+      id: '/api/enrich-soil'
+      path: '/api/enrich-soil'
+      fullPath: '/api/enrich-soil'
+      preLoaderRoute: typeof ApiEnrichSoilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/refresh-recommendations': {
+      id: '/api/public/hooks/refresh-recommendations'
+      path: '/api/public/hooks/refresh-recommendations'
+      fullPath: '/api/public/hooks/refresh-recommendations'
+      preLoaderRoute: typeof ApiPublicHooksRefreshRecommendationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/recalc-parcel': {
+      id: '/api/public/hooks/recalc-parcel'
+      path: '/api/public/hooks/recalc-parcel'
+      fullPath: '/api/public/hooks/recalc-parcel'
+      preLoaderRoute: typeof ApiPublicHooksRecalcParcelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/daily-soil-balance': {
+      id: '/api/public/hooks/daily-soil-balance'
+      path: '/api/public/hooks/daily-soil-balance'
+      fullPath: '/api/public/hooks/daily-soil-balance'
+      preLoaderRoute: typeof ApiPublicHooksDailySoilBalanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AddParcelRoute: AddParcelRoute,
+  AuthRoute: AuthRoute,
+  DashboardRoute: DashboardRoute,
+  DemoRoute: DemoRoute,
+  ApiEnrichSoilRoute: ApiEnrichSoilRoute,
+  ApiFetchNdmiRoute: ApiFetchNdmiRoute,
+  ApiParcelMoistureRasterRoute: ApiParcelMoistureRasterRoute,
+  ApiPublicHooksDailySoilBalanceRoute: ApiPublicHooksDailySoilBalanceRoute,
+  ApiPublicHooksRecalcParcelRoute: ApiPublicHooksRecalcParcelRoute,
+  ApiPublicHooksRefreshRecommendationsRoute:
+    ApiPublicHooksRefreshRecommendationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

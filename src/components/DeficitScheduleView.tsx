@@ -1,0 +1,210 @@
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { MockParcel } from "@/lib/mockData";
+import { CROP_ICONS, CROP_LABELS } from "@/lib/mockData";
+import {
+  PRIORITY_EMOJI,
+  PRIORITY_LABEL,
+  STRESS_LABEL,
+  type DeficitPlan,
+} from "@/lib/deficitPlanner";
+
+interface Props {
+  plan: DeficitPlan;
+  parcels: MockParcel[];
+  availablePct: number;
+  dateFrom: Date;
+  dateTo: Date;
+  onBack: () => void;
+}
+
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("bg-BG", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function stressBadgeClass(s: string) {
+  return s === "critical"
+    ? "bg-red-100 text-red-700"
+    : s === "high"
+    ? "bg-orange-100 text-orange-700"
+    : s === "medium"
+    ? "bg-amber-100 text-amber-700"
+    : "bg-emerald-100 text-emerald-700";
+}
+
+export function DeficitScheduleView({ plan, parcels, availablePct, dateFrom, dateTo, onBack }: Props) {
+  const parcelMap = new Map(parcels.map((p) => [p.id, p]));
+  const allocs = plan.allocations.filter((a) => parcelMap.has(a.parcel_id));
+
+  // Build day → parcel → dose lookup
+  const grid = new Map<string, Map<string, number>>();
+  plan.schedule.forEach((s) => {
+    if (!grid.has(s.parcel_id)) grid.set(s.parcel_id, new Map());
+    const m = grid.get(s.parcel_id)!;
+    m.set(s.scheduled_date, (m.get(s.scheduled_date) ?? 0) + s.dose_mm);
+  });
+
+  const dayTotals = plan.days.map((d) => {
+    let t = 0;
+    plan.schedule.forEach((s) => {
+      if (s.scheduled_date === d) t += s.dose_mm;
+    });
+    return Math.round(t * 10) / 10;
+  });
+
+  const cellColor = (dose: number, allocPriority: string, stress: string): string => {
+    if (dose === 0) return "bg-muted/40 text-muted-foreground";
+    if (allocPriority === "critical") return "bg-red-100 text-red-800 border-red-300";
+    if (stress === "high" || stress === "medium") return "bg-amber-100 text-amber-800 border-amber-300";
+    return "bg-emerald-100 text-emerald-800 border-emerald-300";
+  };
+
+  return (
+    <div className="absolute inset-0 z-40 flex flex-col overflow-hidden bg-background">
+      {/* Header */}
+      <header className="flex shrink-0 items-center gap-3 border-b border-border bg-card px-4 py-3">
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Назад">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-lg font-bold">Оптимален график при воден дефицит</h1>
+      </header>
+
+      <div className="flex shrink-0 items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        <span className="font-bold">⚡ Активен режим на воден дефицит</span>
+        <span>·</span>
+        <span>{availablePct}% от нормалното</span>
+        <span>·</span>
+        <span>
+          {dateFrom.toLocaleDateString("bg-BG")} — {dateTo.toLocaleDateString("bg-BG")}
+        </span>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Calendar grid */}
+        <main className="flex-1 overflow-auto p-4">
+          <div className="rounded-xl border border-border bg-card shadow-card">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="sticky left-0 z-10 bg-muted/50 p-3 text-left font-semibold">Парцел</th>
+                    {plan.days.map((d) => (
+                      <th key={d} className="p-2 text-center text-xs font-semibold">
+                        {dayLabel(d)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {allocs.map((a) => {
+                    const row = grid.get(a.parcel_id) ?? new Map<string, number>();
+                    return (
+                      <tr key={a.parcel_id} className="border-t border-border">
+                        <td className="sticky left-0 z-10 bg-card p-3">
+                          <div className="flex items-center gap-2">
+                            <span>{CROP_ICONS[a.parcel.crop_type]}</span>
+                            <div>
+                              <div className="font-medium">{a.parcel.name}</div>
+                              <div className="text-[11px] text-muted-foreground">
+                                {PRIORITY_EMOJI[a.priority]} {PRIORITY_LABEL[a.priority]}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        {plan.days.map((d) => {
+                          const dose = row.get(d) ?? 0;
+                          const cls = cellColor(dose, a.priority, a.stress);
+                          const isCriticalWarn = dose > 0 && a.priority === "critical";
+                          return (
+                            <td key={d} className="p-1.5 text-center">
+                              <div className={`rounded-md border px-1 py-2 text-xs font-bold ${cls}`}>
+                                {dose > 0 ? (
+                                  <>
+                                    {isCriticalWarn && <span className="mr-0.5">⚠</span>}
+                                    {dose}mm
+                                  </>
+                                ) : (
+                                  "—"
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  <tr className="border-t-2 border-border bg-muted/30">
+                    <td className="sticky left-0 z-10 bg-muted/30 p-3 font-semibold">Общо за деня</td>
+                    {dayTotals.map((t, i) => (
+                      <td key={i} className="p-2 text-center text-xs font-bold">
+                        {t}mm
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+
+        {/* Sidebar */}
+        <aside className="hidden w-[340px] shrink-0 overflow-y-auto border-l border-border bg-card p-4 lg:block">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            Резултат от оптимизацията
+          </h2>
+          <ul className="space-y-3">
+            {allocs.map((a) => (
+              <li key={a.parcel_id} className="rounded-xl border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    {CROP_ICONS[a.parcel.crop_type]} {a.parcel.name}
+                  </span>
+                  <span className="text-lg">{PRIORITY_EMOJI[a.priority]}</span>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {CROP_LABELS[a.parcel.crop_type]}
+                </div>
+                <div className="mt-2 text-sm">
+                  Норма: <b>{a.normalDose}mm</b> → Дефицит:{" "}
+                  <b className="text-amber-700">{a.deficitDose}mm</b>
+                </div>
+                <div className="mt-1 text-xs">
+                  Очаквана загуба:{" "}
+                  <b
+                    className={
+                      a.estimatedYieldLossPct > 25
+                        ? "text-red-600"
+                        : a.estimatedYieldLossPct > 10
+                        ? "text-amber-600"
+                        : "text-emerald-600"
+                    }
+                  >
+                    ~{a.estimatedYieldLossPct}%
+                  </b>
+                </div>
+                <div className="mt-2">
+                  <Badge variant="secondary" className={stressBadgeClass(a.stress)}>
+                    Стрес: {STRESS_LABEL[a.stress]}
+                  </Badge>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-4 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+            <div>
+              Общо вода: <b>{plan.totalScheduled}mm</b> от {plan.totalAvailable}mm налични{" "}
+              <span className="text-amber-700">({plan.efficiencyPct}% ефективност)</span>
+            </div>
+            <div>
+              Очаквано общо намаление на реколтата:{" "}
+              <b className="text-amber-700">~{plan.overallYieldImpactPct}%</b>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
