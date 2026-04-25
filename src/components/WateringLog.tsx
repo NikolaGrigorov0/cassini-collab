@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Droplet, Loader2, Minus, Plus, CheckCircle2, History, Satellite } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications";
 import { toast } from "sonner";
@@ -50,27 +49,27 @@ export function WateringLog({
   currentNDMI,
   recommendedDoseMM,
 }: Props) {
-  const qc = useQueryClient();
   const defaultDose = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
   const [open, setOpen] = useState(false);
   const [dose, setDose] = useState<number>(defaultDose);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<IrrigationRow[]>([]);
 
-  const { data: history = [] } = useQuery<IrrigationRow[]>({
-    queryKey: ["irrigation_events", parcelId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("irrigation_events")
-        .select("id, amount_mm, method, date, created_at, notes")
-        .eq("parcel_id", parcelId)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return (data ?? []) as IrrigationRow[];
-    },
-  });
+  const loadHistory = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("irrigation_events")
+      .select("id, amount_mm, method, date, created_at, notes")
+      .eq("parcel_id", parcelId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (!error && data) setHistory(data as IrrigationRow[]);
+  }, [parcelId]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
 
   const startEdit = () => {
     setDose(defaultDose);
@@ -131,10 +130,8 @@ export function WateringLog({
       setSuccess(`✓ Записано! Следваща проверка ${formatNextCheck(next)} от спътника.`);
       toast.success("Записано");
 
-      // Refresh queries on dashboard
-      qc.invalidateQueries({ queryKey: ["irrigation_events", parcelId] });
-      qc.invalidateQueries({ queryKey: ["recommendation", parcelId] });
-      qc.invalidateQueries({ queryKey: ["parcels"] });
+      // Refresh local history
+      void loadHistory();
 
       setTimeout(() => {
         setOpen(false);
