@@ -21,14 +21,11 @@ interface Props {
   parcelName: string;
   /** GeoJSON Polygon/MultiPolygon (object or stringified). Used to look up rain. */
   geometry?: unknown;
-  /** Suggested optimal irrigation dose for this parcel (mm). */
-  suggestedDoseMm?: number;
   /** Parcel area in hectares — used to convert mm → liters in messages. */
   areaHectares?: number;
 }
 
 type ActionKind = "rain" | null;
-const DEFAULT_OPTIMAL_MM = 15;
 
 export function QuickIrrigationActions({
   parcelId,
