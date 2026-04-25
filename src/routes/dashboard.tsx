@@ -636,8 +636,12 @@ function Dashboard() {
                 if (!editingId || !draftGeometry) return;
                 setSavingShape(true);
                 try {
+                  const { data: sessionData } = await supabase.auth.getSession();
+                  const token = sessionData.session?.access_token;
+                  if (!token) throw new Error("Сесията е изтекла. Моля влез отново.");
                   const res = await updateGeometryFn({
                     data: { parcel_id: editingId, geometry: draftGeometry },
+                    headers: { Authorization: `Bearer ${token}` },
                   });
                   setParcels((prev) =>
                     prev.map((p) =>
