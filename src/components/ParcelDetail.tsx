@@ -413,11 +413,28 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           {/* ISRIC SoilGrids — soil type, pH, organic carbon, retention */}
           <SoilInfoCard
             soilType={parcel.soil_type}
+            soilTypeBg={parcel.soil_type_bg}
+            soilFcPct={parcel.soil_fc_pct}
+            soilWpPct={parcel.soil_wp_pct}
+            soilAwcPct={parcel.soil_awc_pct}
             soilPh={parcel.soil_ph}
             soilOrganicCarbon={parcel.soil_organic_carbon}
             loading={soilLoading}
             error={soilError}
+            onRetry={onRetrySoil}
           />
+
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <Button type="button" variant="outline" size="sm" onClick={testSoilApi} disabled={soilDebugLoading} className="w-full">
+              {soilDebugLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+              🔍 Тест почва
+            </Button>
+            {soilDebugRaw && (
+              <pre className="mt-3 max-h-72 overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-[11px] leading-relaxed text-foreground">
+                {soilDebugRaw}
+              </pre>
+            )}
+          </div>
 
           {/* Forecast */}
           {liveData && liveData.forecast.length > 0 ? (
