@@ -42,6 +42,11 @@ type ParcelRow = {
   geometry: string;
   pump_flow_m3h: number | null;
   soil_type: string | null;
+  soil_type_wrb: string | null;
+  soil_type_bg: string | null;
+  soil_fc_pct: number | null;
+  soil_wp_pct: number | null;
+  soil_awc_pct: number | null;
   soil_ph: number | null;
   soil_organic_carbon: number | null;
   soil_clay_pct: number | null;
@@ -70,6 +75,7 @@ function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [soilLoadingId, setSoilLoadingId] = useState<string | null>(null);
   const [soilErrorByParcel, setSoilErrorByParcel] = useState<Record<string, string>>({});
+  const [soilRetryNonce, setSoilRetryNonce] = useState(0);
   const [editDetailsId, setEditDetailsId] = useState<string | null>(null);
 
   // Deficit mode
@@ -118,7 +124,7 @@ function Dashboard() {
       setLoadingData(true);
       const { data: p, error } = await supabase
         .from("parcels")
-        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h, soil_type, soil_ph, soil_organic_carbon, soil_clay_pct, soil_sand_pct, soil_silt_pct")
+        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h, soil_type, soil_type_wrb, soil_type_bg, soil_fc_pct, soil_wp_pct, soil_awc_pct, soil_ph, soil_organic_carbon, soil_clay_pct, soil_sand_pct, soil_silt_pct")
         .order("created_at", { ascending: false });
       if (error) {
         toast.error(error.message);
@@ -181,6 +187,11 @@ function Dashboard() {
           forecast: [],
           pump_flow_m3h: row.pump_flow_m3h,
           soil_type: row.soil_type,
+          soil_type_wrb: row.soil_type_wrb,
+          soil_type_bg: row.soil_type_bg,
+          soil_fc_pct: row.soil_fc_pct == null ? null : Number(row.soil_fc_pct),
+          soil_wp_pct: row.soil_wp_pct == null ? null : Number(row.soil_wp_pct),
+          soil_awc_pct: row.soil_awc_pct == null ? null : Number(row.soil_awc_pct),
           soil_ph: row.soil_ph == null ? null : Number(row.soil_ph),
           soil_organic_carbon: row.soil_organic_carbon == null ? null : Number(row.soil_organic_carbon),
           soil_clay_pct: row.soil_clay_pct == null ? null : Number(row.soil_clay_pct),
@@ -287,8 +298,8 @@ function Dashboard() {
     if (!selectedId) return;
     const parcel = parcels.find((p) => p.id === selectedId);
     if (!parcel) return;
-    // Treat "Неизвестна" as not-enriched so we retry once the API/logic is fixed.
-    if (parcel.soil_type && parcel.soil_type !== "Неизвестна") return;
+    // Treat empty/"Неизвестна" as not-enriched so the UI can retry and always show something useful.
+    if (parcel.soil_type_bg || (parcel.soil_type && parcel.soil_type !== "Неизвестна")) return;
     let cancelled = false;
     setSoilLoadingId(selectedId);
     setSoilErrorByParcel((m) => {
@@ -306,6 +317,11 @@ function Dashboard() {
         if (!r.ok) throw new Error(j?.error ?? `HTTP ${r.status}`);
         return j as {
           soil_type: string | null;
+          soil_type_wrb: string | null;
+          soil_type_bg: string | null;
+          soil_fc_pct: number | null;
+          soil_wp_pct: number | null;
+          soil_awc_pct: number | null;
           soil_ph: number | null;
           soil_organic_carbon: number | null;
           soil_clay_pct: number | null;
@@ -321,6 +337,11 @@ function Dashboard() {
               ? {
                   ...p,
                   soil_type: j.soil_type ?? p.soil_type,
+                  soil_type_wrb: j.soil_type_wrb ?? p.soil_type_wrb,
+                  soil_type_bg: j.soil_type_bg ?? p.soil_type_bg,
+                  soil_fc_pct: j.soil_fc_pct ?? p.soil_fc_pct,
+                  soil_wp_pct: j.soil_wp_pct ?? p.soil_wp_pct,
+                  soil_awc_pct: j.soil_awc_pct ?? p.soil_awc_pct,
                   soil_ph: j.soil_ph ?? p.soil_ph,
                   soil_organic_carbon: j.soil_organic_carbon ?? p.soil_organic_carbon,
                   soil_clay_pct: j.soil_clay_pct ?? p.soil_clay_pct,
@@ -346,7 +367,7 @@ function Dashboard() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [selectedId, soilRetryNonce]);
 
   // Keyboard shortcut: N -> Add parcel
   useEffect(() => {
@@ -682,6 +703,10 @@ function Dashboard() {
               loadingLive={liveLoadingId === selected.id}
               soilLoading={soilLoadingId === selected.id}
               soilError={soilErrorByParcel[selected.id] ?? null}
+              onRetrySoil={() => {
+                setParcels((prev) => prev.map((p) => p.id === selected.id ? { ...p, soil_type: null, soil_type_bg: null } : p));
+                setSoilRetryNonce((n) => n + 1);
+              }}
               isEditing={false}
               editAreaHa={draftAreaHa}
               onEditDetails={() => setEditDetailsId(selected.id)}
