@@ -234,15 +234,22 @@ export const Route = createFileRoute("/api/enrich-soil")({
           const soc = avg(soilSamples.map((s) => s.soc));
 
           const awc_mm = computeAWCmm(sand, clay);
+          const fallback = fallbackSoilByBulgarianRegion(lat, lon);
+          const waterPct = computeWaterPct(sand, clay);
 
           const update = {
             soil_sand_pct: sand,
             soil_clay_pct: clay,
             soil_silt_pct: silt,
             soil_type,
+            soil_type_wrb: soil_type === "Неизвестна" ? fallback.wrb : soil_type,
+            soil_type_bg: bgFromTextureType(soil_type, lat, lon),
+            soil_fc_pct: waterPct.fc,
+            soil_wp_pct: waterPct.wp,
+            soil_awc_pct: waterPct.awc,
             soil_ph: ph == null ? null : Number(ph.toFixed(2)),
             soil_organic_carbon: soc == null ? null : Number(soc.toFixed(2)),
-            soil_data_raw: { samples: samplePts.map((p, i) => ({ ...p, ...soilSamples[i], type: types[i] })) },
+            soil_data_raw: { samples: samplePts.map((p, i) => ({ ...p, ...soilSamples[i], type: types[i] })), fallback_region: fallback },
             awc_mm,
             slope_deg: topo.slope,
             aspect_deg: topo.aspect,
