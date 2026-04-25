@@ -225,7 +225,11 @@ function DemoTour() {
           {!tourOpen && (
             <button
               onClick={() => setTourOpen(true)}
-              className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-primary/40 bg-card px-4 py-2 text-sm font-semibold text-primary shadow-elevated hover:bg-primary/10"
+              className={`absolute bottom-6 z-30 rounded-full border border-primary/40 bg-card px-4 py-2 text-sm font-semibold text-primary shadow-elevated hover:bg-primary/10 ${
+                selected
+                  ? "left-4 sm:left-6 md:left-1/2 md:-translate-x-[calc(50%+210px)]"
+                  : "left-1/2 -translate-x-1/2"
+              }`}
             >
               <Play className="mr-1.5 inline h-3.5 w-3.5" /> Продължи тура
             </button>
