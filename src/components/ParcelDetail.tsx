@@ -1,4 +1,5 @@
-import { X, Droplets, Calendar, Satellite, Share2, CloudRain, Loader2, Trash2, Gauge, Pencil, Save, Ban } from "lucide-react";
+import { useState } from "react";
+import { X, Droplets, Calendar, Satellite, Share2, CloudRain, Loader2, Trash2, Gauge, Pencil, Save, Ban, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -65,6 +66,8 @@ interface ParcelDetailProps {
   soilError?: string | null;
   /** Open the edit-everything modal (name/crop/phase/area). */
   onEditDetails?: () => void;
+  /** Retry soil enrichment from the dashboard. */
+  onRetrySoil?: () => void;
 }
 
 function IndexBar({ value, label }: { value: number; label: string }) {
@@ -120,7 +123,9 @@ function MockForecastChart({ data, areaHectares }: { data: MockParcel["forecast"
   );
 }
 
-export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false, soilLoading = false, soilError = null, onEditDetails }: ParcelDetailProps) {
+export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete, isEditing = false, editAreaHa = null, onStartEdit, onSaveEdit, onCancelEdit, saving = false, soilLoading = false, soilError = null, onEditDetails, onRetrySoil }: ParcelDetailProps) {
+  const [soilDebugLoading, setSoilDebugLoading] = useState(false);
+  const [soilDebugRaw, setSoilDebugRaw] = useState<string | null>(null);
   // Prefer live data when present; otherwise fall back to whatever was on the parcel.
   const ndmi = liveData?.ndmi ?? parcel.ndmi;
   const ndvi = liveData?.ndvi ?? parcel.ndvi;
@@ -149,6 +154,25 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
 
   const recordedAgo = Math.round((Date.now() - new Date(parcel.recorded_at).getTime()) / 86400000);
   const isSar = liveData?.source === "sentinel-1-sar";
+
+  const testSoilApi = async () => {
+    const ring = parcel.geometry?.coordinates?.[0] as [number, number][] | undefined;
+    if (!ring?.length) return;
+    const lng = ring.reduce((sum, point) => sum + point[0], 0) / ring.length;
+    const lat = ring.reduce((sum, point) => sum + point[1], 0) / ring.length;
+    const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lng}&lat=${lat}&property=wrb_class_name&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=Q0.5`;
+    setSoilDebugLoading(true);
+    setSoilDebugRaw(null);
+    try {
+      const response = await fetch(url);
+      const text = await response.text();
+      setSoilDebugRaw(JSON.stringify({ url, status: response.status, body: tryParseJson(text) ?? text }, null, 2));
+    } catch (error) {
+      setSoilDebugRaw(JSON.stringify({ url, error: error instanceof Error ? error.message : String(error) }, null, 2));
+    } finally {
+      setSoilDebugLoading(false);
+    }
+  };
 
   return (
     <>
