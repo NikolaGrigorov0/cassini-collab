@@ -67,6 +67,8 @@ function Dashboard() {
   const [liveByParcel, setLiveByParcel] = useState<Record<string, LiveParcelData>>({});
   const [liveLoadingId, setLiveLoadingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [soilLoadingId, setSoilLoadingId] = useState<string | null>(null);
+  const [soilErrorByParcel, setSoilErrorByParcel] = useState<Record<string, string>>({});
 
   // Deficit mode
   const [deficitModalOpen, setDeficitModalOpen] = useState(false);
@@ -271,6 +273,71 @@ function Dashboard() {
       })
       .finally(() => {
         if (!cancelled) setLiveLoadingId((id) => (id === selectedId ? null : id));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  // Auto-enrich soil for the selected parcel if it doesn't have a soil_type yet.
+  useEffect(() => {
+    if (!selectedId) return;
+    const parcel = parcels.find((p) => p.id === selectedId);
+    if (!parcel) return;
+    if (parcel.soil_type) return; // already enriched
+    let cancelled = false;
+    setSoilLoadingId(selectedId);
+    setSoilErrorByParcel((m) => {
+      const next = { ...m };
+      delete next[selectedId];
+      return next;
+    });
+    fetch("/api/enrich-soil", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parcel_id: selectedId }),
+    })
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j?.error ?? `HTTP ${r.status}`);
+        return j as {
+          soil_type: string | null;
+          soil_ph: number | null;
+          soil_organic_carbon: number | null;
+          soil_clay_pct: number | null;
+          soil_sand_pct: number | null;
+          soil_silt_pct: number | null;
+        };
+      })
+      .then((j) => {
+        if (cancelled) return;
+        setParcels((prev) =>
+          prev.map((p) =>
+            p.id === selectedId
+              ? {
+                  ...p,
+                  soil_type: j.soil_type ?? p.soil_type,
+                  soil_ph: j.soil_ph ?? p.soil_ph,
+                  soil_organic_carbon: j.soil_organic_carbon ?? p.soil_organic_carbon,
+                  soil_clay_pct: j.soil_clay_pct ?? p.soil_clay_pct,
+                  soil_sand_pct: j.soil_sand_pct ?? p.soil_sand_pct,
+                  soil_silt_pct: j.soil_silt_pct ?? p.soil_silt_pct,
+                }
+              : p,
+          ),
+        );
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setSoilErrorByParcel((m) => ({
+          ...m,
+          [selectedId]: "Почвените данни временно недостъпни.",
+        }));
+        console.error("enrich-soil failed:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setSoilLoadingId((id) => (id === selectedId ? null : id));
       });
     return () => {
       cancelled = true;
@@ -610,6 +677,8 @@ function Dashboard() {
               onClose={() => setSelectedId(null)}
               liveData={liveByParcel[selected.id] ?? null}
               loadingLive={liveLoadingId === selected.id}
+              soilLoading={soilLoadingId === selected.id}
+              soilError={soilErrorByParcel[selected.id] ?? null}
               isEditing={false}
               editAreaHa={draftAreaHa}
               onStartEdit={() => {
