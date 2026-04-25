@@ -116,6 +116,7 @@ export type Database = {
           notes: string | null
           parcel_id: string
           soil_moisture_after: number | null
+          user_id: string | null
         }
         Insert: {
           amount_mm: number
@@ -126,6 +127,7 @@ export type Database = {
           notes?: string | null
           parcel_id: string
           soil_moisture_after?: number | null
+          user_id?: string | null
         }
         Update: {
           amount_mm?: number
@@ -136,6 +138,7 @@ export type Database = {
           notes?: string | null
           parcel_id?: string
           soil_moisture_after?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
