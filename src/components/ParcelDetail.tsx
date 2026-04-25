@@ -377,6 +377,15 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             growthPhase={parcel.growth_phase}
           />
 
+          {/* ISRIC SoilGrids — soil type, pH, organic carbon, retention */}
+          <SoilInfoCard
+            soilType={parcel.soil_type}
+            soilPh={parcel.soil_ph}
+            soilOrganicCarbon={parcel.soil_organic_carbon}
+            loading={soilLoading}
+            error={soilError}
+          />
+
           {/* Forecast */}
           {liveData && liveData.forecast.length > 0 ? (
             <ForecastChart forecast={liveData.forecast} source={liveData.source} areaHectares={parcel.area_hectares} />
