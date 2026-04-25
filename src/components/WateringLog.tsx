@@ -16,6 +16,7 @@ import {
   formatNextCheck,
   nextCheckDate,
   recalculateAfterIrrigation,
+  recomputeForecast,
   reverseIrrigation,
 } from "@/lib/irrigationCorrection";
 
@@ -32,6 +33,18 @@ interface Props {
   currentStatus?: "green" | "yellow" | "red";
   /** Soil type label from ISRIC enrichment (drives soil-aware NDMI lift). */
   soilType?: string | null;
+  /** Called after a successful confirm/undo so the parent can patch its
+   *  liveData (dose, status, reason, NDMI, forecast) and the UI reflects
+   *  the new soil-moisture state immediately. */
+  onIrrigationChange?: (patch: {
+    ndmi: number;
+    dose_mm: number;
+    status: "green" | "yellow" | "red";
+    reason: string;
+    forecastTransform: (
+      prev: { date: string; dose_mm: number; status: "green" | "yellow" | "red" }[],
+    ) => { date: string; dose_mm: number; status: "green" | "yellow" | "red" }[];
+  }) => void;
 }
 
 interface IrrigationRow {
@@ -69,6 +82,7 @@ export function WateringLog({
   recommendedDoseMM,
   currentStatus,
   soilType,
+  onIrrigationChange,
 }: Props) {
   const defaultDose = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
   const [open, setOpen] = useState(false);
@@ -175,6 +189,14 @@ export function WateringLog({
       toast.success("Записано");
       setOpen(false);
       setTodaysEvent((inserted as unknown as IrrigationRow) ?? null);
+      onIrrigationChange?.({
+        ndmi: correction.correctedNDMI,
+        dose_mm: correction.newDose,
+        status: correction.newStatus,
+        reason: correction.newReason,
+        forecastTransform: (prev) =>
+          recomputeForecast(prev, currentNDMI, correction.correctedNDMI, recommendedDoseMM),
+      });
       void loadHistory();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Грешка при запис");
@@ -214,6 +236,15 @@ export function WateringLog({
       toast.success("↩ Напояването е отменено успешно", { duration: 3000 });
       setTodaysEvent(null);
       setConfirmUndo(false);
+      onIrrigationChange?.({
+        ndmi: restored.restoredNDMI,
+        dose_mm: restored.restoredDose,
+        status: restored.restoredStatus,
+        reason: restored.restoredReason,
+        // Reverse: rebuild forecast from the *restored* (pre-irrigation) NDMI.
+        forecastTransform: (prev) =>
+          recomputeForecast(prev, restored.restoredNDMI, restored.restoredNDMI, restored.restoredDose),
+      });
       void loadHistory();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Грешка при отмяна");
