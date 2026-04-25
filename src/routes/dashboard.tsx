@@ -633,16 +633,16 @@ function Dashboard() {
                                 <span className="truncate">{p.name}</span>
                                 {active && hasBoundary && (
                                   <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-700">
-                                    На картата →
+                                    {t("dashboard.sidebar.onMap")}
                                   </span>
                                 )}
                                 {!hasBoundary && (
                                   <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase text-muted-foreground">
-                                    Без граници
+                                    {t("dashboard.sidebar.noBoundary")}
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-muted-foreground">{CROP_LABELS[p.crop_type]} · {p.area_hectares} ха</div>
+                              <div className="text-xs text-muted-foreground">{t(`crops.${p.crop_type}`)} · {p.area_hectares} {t("units.ha")}</div>
                             </div>
                           </div>
                           <span className="h-2.5 w-2.5 shrink-0 rounded-full mt-1.5" style={{ backgroundColor: s.fill }} />
@@ -650,7 +650,7 @@ function Dashboard() {
                         <div className="mt-2 flex flex-wrap items-center justify-between gap-1">
                           <div className="flex items-center gap-1">
                             <span className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ backgroundColor: `${s.fill}20`, color: s.fill }}>
-                              {s.label}
+                              {t(`status.${p.status}`)}
                             </span>
                             {deficitBadge && (
                               <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase ${deficitBadge.cls}`}>
@@ -662,7 +662,7 @@ function Dashboard() {
                             {(() => {
                               const mm = da ? da.deficitDose : p.dose_mm;
                               const m3 = convertWater(mm, p.area_hectares).totalM3;
-                              return `${m3.toFixed(1)} м³`;
+                              return `${m3.toFixed(1)} ${t("units.m3")}`;
                             })()}
                           </span>
                         </div>
@@ -675,11 +675,11 @@ function Dashboard() {
 
             {/* Stats */}
             <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Статистика</div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("dashboard.sidebar.stats")}</div>
               <ul className="space-y-1.5 text-sm">
-                <li className="flex justify-between"><span className="text-muted-foreground">Общо парцели</span><span className="font-semibold">{parcels.length}</span></li>
-                <li className="flex justify-between"><span className="text-muted-foreground">Спестена вода</span><span className="font-semibold text-primary">~{parcels.length * 800} л</span></li>
-                <li className="flex justify-between"><span className="text-muted-foreground">CO₂ намаление</span><span className="font-semibold text-primary">~{(parcels.length * 0.3).toFixed(1)} кг</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.totalParcels")}</span><span className="font-semibold">{parcels.length}</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.savedWater")}</span><span className="font-semibold text-primary">~{parcels.length * 800} {t("units.liters")}</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.co2")}</span><span className="font-semibold text-primary">~{(parcels.length * 0.3).toFixed(1)} kg</span></li>
               </ul>
             </div>
           </div>
@@ -691,16 +691,16 @@ function Dashboard() {
               className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
             >
               <Zap className="mr-2 h-4 w-4" />
-              Воден дефицит
+              {t("dashboard.sidebar.deficit")}
             </Button>
             <Link to="/add-parcel">
               <Button className="w-full bg-primary hover:bg-primary/90">
                 <Plus className="mr-2 h-4 w-4" />
-                Добави парцел
+                {t("dashboard.sidebar.addParcel")}
               </Button>
             </Link>
             <p className="text-center text-[10px] text-muted-foreground">
-              Натисни <kbd className="rounded border border-border bg-muted px-1 font-mono">N</kbd> за бърз достъп
+              {t("dashboard.sidebar.shortcutHint", { key: "N" }).split("N")[0]}<kbd className="rounded border border-border bg-muted px-1 font-mono">N</kbd>{t("dashboard.sidebar.shortcutHint", { key: "N" }).split("N")[1]}
             </p>
           </div>
         </aside>
@@ -731,8 +731,8 @@ function Dashboard() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                 </span>
-                <span className="text-sm font-medium">Кликни на парцел в картата за детайли</span>
-                <button onClick={() => setTooltipOpen(false)} className="rounded-md p-0.5 hover:bg-muted" aria-label="Затвори">
+                <span className="text-sm font-medium">{t("dashboard.tooltipClickParcel")}</span>
+                <button onClick={() => setTooltipOpen(false)} className="rounded-md p-0.5 hover:bg-muted" aria-label={t("common.close")}>
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
