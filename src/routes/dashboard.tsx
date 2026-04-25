@@ -772,6 +772,24 @@ function Dashboard() {
                 });
                 setSelectedId(null);
               }}
+              onIrrigationChange={(patch) => {
+                setLiveByParcel((m) => {
+                  const prev = m[selected.id];
+                  if (!prev) return m;
+                  return {
+                    ...m,
+                    [selected.id]: {
+                      ...prev,
+                      ndmi: patch.ndmi,
+                      dose_mm: patch.dose_mm,
+                      status: patch.status,
+                      reason: patch.reason,
+                      forecast: patch.forecastTransform(prev.forecast),
+                      fetchedAt: new Date(),
+                    },
+                  };
+                });
+              }}
             />
           )}
 
