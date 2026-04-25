@@ -22,6 +22,9 @@ import { updateParcelGeometry } from "@/server/parcel.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { geometryCentroid } from "@/lib/weather";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { formatDate } from "@/i18n";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -63,6 +66,7 @@ type RecRow = {
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [bannerOpen, setBannerOpen] = useState(true);
@@ -106,12 +110,12 @@ function Dashboard() {
     if (!editingId) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = "Имаш незапазени промени. Сигурен ли си?";
+      e.returnValue = t("dashboard.unsavedConfirm");
       return e.returnValue;
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [editingId]);
+  }, [editingId, t]);
 
   // Auth guard
   useEffect(() => {
@@ -182,7 +186,7 @@ function Dashboard() {
           geometry,
           status: (rec?.status ?? "yellow") as IrrigationStatus,
           dose_mm: Number(rec?.dose_mm ?? 0),
-          reason: rec?.reason ?? "Все още няма анализ. Първа спътникова проверка скоро.",
+          reason: rec?.reason ?? t("dashboard.noAnalysisYet"),
           ndmi: nd ? Number(nd.ndmi_value) : 0.15,
           ndvi: nd ? Number(nd.ndvi_value) : 0.6,
           recorded_at: nd?.recorded_at ?? new Date().toISOString(),
@@ -284,7 +288,7 @@ function Dashboard() {
       })
       .catch((err) => {
         console.error("fetch-ndmi failed:", err);
-        if (!cancelled) toast.error("Неуспешно зареждане на спътникови данни");
+        if (!cancelled) toast.error(t("dashboard.toasts.ndmiFailed"));
       })
       .finally(() => {
         if (!cancelled) setLiveLoadingId((id) => (id === selectedId ? null : id));
@@ -358,7 +362,7 @@ function Dashboard() {
         if (cancelled) return;
         setSoilErrorByParcel((m) => ({
           ...m,
-          [selectedId]: "Почвените данни временно недостъпни.",
+          [selectedId]: t("dashboard.soilUnavailable"),
         }));
         console.error("enrich-soil failed:", err);
       })
@@ -390,9 +394,7 @@ function Dashboard() {
     navigate({ to: "/" });
   };
 
-  const today = new Date().toLocaleDateString("bg-BG", {
-    day: "numeric", month: "long", year: "numeric",
-  });
+  const today = formatDate(new Date(), { day: "numeric", month: "long", year: "numeric" });
 
   // Per-parcel deficit allocation lookup
   const deficitByParcel = useMemo(() => {
@@ -419,14 +421,14 @@ function Dashboard() {
     setDeficitParams(params);
     setDeficitModalOpen(false);
     setShowScheduleView(true);
-    toast.success("Графикът при воден дефицит е генериран");
+    toast.success(t("dashboard.toasts.deficitGenerated"));
   };
 
   const handleDeactivateDeficit = () => {
     setDeficitPlan(null);
     setDeficitParams(null);
     setShowScheduleView(false);
-    toast("Режимът на воден дефицит е изключен");
+    toast(t("dashboard.toasts.deficitOff"));
   };
 
   if (authLoading || !user) {
@@ -455,7 +457,7 @@ function Dashboard() {
       {/* Top bar */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-3 sm:px-4">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen((v) => !v)} aria-label="Меню">
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen((v) => !v)} aria-label={t("dashboard.topbar.menu")}>
             <BarChart3 className="h-5 w-5" />
           </Button>
           <Logo />
@@ -467,18 +469,19 @@ function Dashboard() {
             className={`hidden items-center gap-1.5 text-xs sm:inline-flex ${
               realtimeStatus === "connected" ? "text-emerald-600" : "text-muted-foreground"
             }`}
-            title={realtimeStatus === "connected" ? "Realtime активен" : "Офлайн режим"}
+            title={realtimeStatus === "connected" ? t("dashboard.topbar.realtimeOn") : t("dashboard.topbar.realtimeOff")}
           >
             <span
               className={`h-2 w-2 rounded-full ${
                 realtimeStatus === "connected" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"
               }`}
             />
-            {realtimeStatus === "connected" ? "Realtime свързан" : "Офлайн режим"}
+            {realtimeStatus === "connected" ? t("dashboard.topbar.realtimeOn") : t("dashboard.topbar.realtimeOff")}
           </span>
           <WeatherWidget center={allParcelsCentroid} />
           <NotificationsBell />
-          <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Изход">
+          <LanguageSelector variant="icon" />
+          <Button variant="ghost" size="icon" onClick={handleLogout} aria-label={t("dashboard.topbar.logout")}>
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
@@ -489,21 +492,20 @@ function Dashboard() {
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-300 bg-amber-100 px-4 py-2 text-sm text-amber-900">
           <span>
             <Zap className="mr-1 inline h-4 w-4" />
-            <b>Активен воден дефицит</b> · {deficitParams.availablePct}% · до{" "}
-            {deficitParams.dateTo.toLocaleDateString("bg-BG")}
+            <b>{t("dashboard.deficitBanner.active")}</b> · {deficitParams.availablePct}% · {formatDate(deficitParams.dateTo, { day: "numeric", month: "long" })}
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => setShowScheduleView(true)}
               className="rounded-md border border-amber-400 bg-white px-2 py-0.5 text-xs font-semibold hover:bg-amber-50"
             >
-              Виж график
+              {t("dashboard.deficitBanner.viewSchedule")}
             </button>
             <button
               onClick={handleDeactivateDeficit}
               className="rounded-md border border-amber-400 bg-white px-2 py-0.5 text-xs font-semibold hover:bg-amber-50"
             >
-              Деактивирай
+              {t("dashboard.deficitBanner.deactivate")}
             </button>
           </div>
         </div>
@@ -513,9 +515,9 @@ function Dashboard() {
       {bannerOpen && (
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-secondary/30 bg-secondary/10 px-4 py-2 text-sm">
           <span className="text-foreground">
-            <span className="font-semibold text-secondary">Твоето табло</span> — добави парцел и получи реални спътникови препоръки на всеки 5 дни
+            <span className="font-semibold text-secondary">{t("dashboard.demoBanner.title")}</span> {t("dashboard.demoBanner.text")}
           </span>
-          <button onClick={() => setBannerOpen(false)} className="rounded-md p-1 hover:bg-secondary/20" aria-label="Затвори банер">
+          <button onClick={() => setBannerOpen(false)} className="rounded-md p-1 hover:bg-secondary/20" aria-label={t("dashboard.demoBanner.close")}>
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -530,7 +532,7 @@ function Dashboard() {
         >
           <div className="border-b border-sidebar-border px-4 py-3 space-y-2.5">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Моите парцели</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("dashboard.sidebar.title")}</h2>
               <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                 {searchQuery ? `${filteredParcels.length}/${parcels.length}` : parcels.length}
               </span>
@@ -540,14 +542,14 @@ function Dashboard() {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Търси по име, култура или статус…"
+                placeholder={t("dashboard.sidebar.search")}
                 className="h-8 pl-8 text-sm"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
-                  aria-label="Изчисти"
+                  aria-label={t("dashboard.sidebar.clear")}
                 >
                   <X className="h-3 w-3 text-muted-foreground" />
                 </button>
@@ -560,11 +562,11 @@ function Dashboard() {
               <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : parcels.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                Все още нямаш парцели. Добави първия си!
+                {t("dashboard.sidebar.empty")}
               </div>
             ) : filteredParcels.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                Няма парцели, които да съответстват на „{searchQuery}".
+                {t("dashboard.sidebar.noMatch", { q: searchQuery })}
               </div>
             ) : (
               <ul className="space-y-2">
@@ -576,10 +578,10 @@ function Dashboard() {
                   const hasBoundary = !!ring && ring.length >= 3;
                   const deficitBadge = da
                     ? da.priority === "critical"
-                      ? { text: "Пълна доза", cls: "bg-emerald-100 text-emerald-700" }
+                      ? { text: t("dashboard.sidebar.fullDose"), cls: "bg-emerald-100 text-emerald-700" }
                       : da.deficitDose === 0
-                      ? { text: "Пропуска се", cls: "bg-muted text-muted-foreground" }
-                      : { text: "Намалена", cls: "bg-amber-100 text-amber-800" }
+                      ? { text: t("dashboard.sidebar.skipped"), cls: "bg-muted text-muted-foreground" }
+                      : { text: t("dashboard.sidebar.reduced"), cls: "bg-amber-100 text-amber-800" }
                     : null;
                   return (
                     <li key={p.id} ref={(el) => { listItemRefs.current[p.id] = el; }}>
@@ -631,16 +633,16 @@ function Dashboard() {
                                 <span className="truncate">{p.name}</span>
                                 {active && hasBoundary && (
                                   <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-700">
-                                    На картата →
+                                    {t("dashboard.sidebar.onMap")}
                                   </span>
                                 )}
                                 {!hasBoundary && (
                                   <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase text-muted-foreground">
-                                    Без граници
+                                    {t("dashboard.sidebar.noBoundary")}
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-muted-foreground">{CROP_LABELS[p.crop_type]} · {p.area_hectares} ха</div>
+                              <div className="text-xs text-muted-foreground">{t(`crops.${p.crop_type}`)} · {p.area_hectares} {t("units.ha")}</div>
                             </div>
                           </div>
                           <span className="h-2.5 w-2.5 shrink-0 rounded-full mt-1.5" style={{ backgroundColor: s.fill }} />
@@ -648,7 +650,7 @@ function Dashboard() {
                         <div className="mt-2 flex flex-wrap items-center justify-between gap-1">
                           <div className="flex items-center gap-1">
                             <span className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ backgroundColor: `${s.fill}20`, color: s.fill }}>
-                              {s.label}
+                              {t(`status.${p.status}`)}
                             </span>
                             {deficitBadge && (
                               <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase ${deficitBadge.cls}`}>
@@ -660,7 +662,7 @@ function Dashboard() {
                             {(() => {
                               const mm = da ? da.deficitDose : p.dose_mm;
                               const m3 = convertWater(mm, p.area_hectares).totalM3;
-                              return `${m3.toFixed(1)} м³`;
+                              return `${m3.toFixed(1)} ${t("units.m3")}`;
                             })()}
                           </span>
                         </div>
@@ -673,11 +675,11 @@ function Dashboard() {
 
             {/* Stats */}
             <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Статистика</div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("dashboard.sidebar.stats")}</div>
               <ul className="space-y-1.5 text-sm">
-                <li className="flex justify-between"><span className="text-muted-foreground">Общо парцели</span><span className="font-semibold">{parcels.length}</span></li>
-                <li className="flex justify-between"><span className="text-muted-foreground">Спестена вода</span><span className="font-semibold text-primary">~{parcels.length * 800} л</span></li>
-                <li className="flex justify-between"><span className="text-muted-foreground">CO₂ намаление</span><span className="font-semibold text-primary">~{(parcels.length * 0.3).toFixed(1)} кг</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.totalParcels")}</span><span className="font-semibold">{parcels.length}</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.savedWater")}</span><span className="font-semibold text-primary">~{parcels.length * 800} {t("units.liters")}</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.co2")}</span><span className="font-semibold text-primary">~{(parcels.length * 0.3).toFixed(1)} kg</span></li>
               </ul>
             </div>
           </div>
@@ -689,16 +691,16 @@ function Dashboard() {
               className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
             >
               <Zap className="mr-2 h-4 w-4" />
-              Воден дефицит
+              {t("dashboard.sidebar.deficit")}
             </Button>
             <Link to="/add-parcel">
               <Button className="w-full bg-primary hover:bg-primary/90">
                 <Plus className="mr-2 h-4 w-4" />
-                Добави парцел
+                {t("dashboard.sidebar.addParcel")}
               </Button>
             </Link>
             <p className="text-center text-[10px] text-muted-foreground">
-              Натисни <kbd className="rounded border border-border bg-muted px-1 font-mono">N</kbd> за бърз достъп
+              {t("dashboard.sidebar.shortcutHint", { key: "N" }).split("N")[0]}<kbd className="rounded border border-border bg-muted px-1 font-mono">N</kbd>{t("dashboard.sidebar.shortcutHint", { key: "N" }).split("N")[1]}
             </p>
           </div>
         </aside>
@@ -729,8 +731,8 @@ function Dashboard() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                 </span>
-                <span className="text-sm font-medium">Кликни на парцел в картата за детайли</span>
-                <button onClick={() => setTooltipOpen(false)} className="rounded-md p-0.5 hover:bg-muted" aria-label="Затвори">
+                <span className="text-sm font-medium">{t("dashboard.tooltipClickParcel")}</span>
+                <button onClick={() => setTooltipOpen(false)} className="rounded-md p-0.5 hover:bg-muted" aria-label={t("common.close")}>
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>

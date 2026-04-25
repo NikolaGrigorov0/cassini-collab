@@ -14,6 +14,9 @@ import { CROP_ICONS, CROP_LABELS, PHASE_LABELS, type CropType, type GrowthPhase 
 import { SATELLITE_STYLE } from "@/lib/mapStyle";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { formatDate } from "@/i18n";
 
 export const Route = createFileRoute("/add-parcel")({
   head: () => ({
@@ -41,6 +44,7 @@ function polygonAreaHectares(ring: [number, number][]): number {
 
 function AddParcel() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [step, setStep] = useState<1 | 2>(1);
   const [polygon, setPolygon] = useState<[number, number][]>([]);
   const area = polygonAreaHectares(polygon);
@@ -194,14 +198,14 @@ function AddParcel() {
   };
 
   const handleSave = async () => {
-    if (!name.trim()) { toast.error("Въведи име на парцела"); return; }
-    if (polygon.length < 3) { toast.error("Начертай парцел"); return; }
+    if (!name.trim()) { toast.error(t("addParcel.errors.needName")); return; }
+    if (polygon.length < 3) { toast.error(t("addParcel.errors.needPolygon")); return; }
     setSaving(true);
 
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
       setSaving(false);
-      toast.error("Моля влез в акаунта си");
+      toast.error(t("addParcel.errors.needLogin"));
       navigate({ to: "/auth" });
       return;
     }
@@ -219,27 +223,27 @@ function AddParcel() {
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Парцелът е запазен");
+    toast.success(t("addParcel.saved"));
     navigate({ to: "/dashboard" });
   };
 
-  const firstAnalysis = new Date(Date.now() + 5 * 86400000).toLocaleDateString("bg-BG", { day: "numeric", month: "long" });
+  const firstAnalysis = formatDate(new Date(Date.now() + 5 * 86400000), { day: "numeric", month: "long" });
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Header */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4">
         <div className="flex items-center gap-3">
-          <Link to="/dashboard"><Button variant="ghost" size="icon" aria-label="Назад"><ArrowLeft className="h-5 w-5" /></Button></Link>
+          <Link to="/dashboard"><Button variant="ghost" size="icon" aria-label={t("common.back")}><ArrowLeft className="h-5 w-5" /></Button></Link>
           <Logo />
         </div>
         <div className="flex items-center gap-2 text-sm">
           <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${step >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</span>
           <div className={`h-0.5 w-8 sm:w-12 ${step >= 2 ? "bg-primary" : "bg-border"}`} />
           <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${step >= 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
-          <span className="ml-2 hidden text-muted-foreground sm:inline">Стъпка {step} от 2</span>
+          <span className="ml-2 hidden text-muted-foreground sm:inline">{t("addParcel.stepOf", { step, total: 2 })}</span>
         </div>
-        <div className="w-20" />
+        <div className="w-20 flex justify-end"><LanguageSelector variant="icon" /></div>
       </header>
 
       {step === 1 ? (
@@ -250,18 +254,18 @@ function AddParcel() {
 
           {searchedPlace && (
             <div className="absolute left-4 top-[68px] z-10 w-[300px] max-w-[calc(100vw-2rem)] rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900 shadow-lg">
-              📍 <span className="font-semibold">{searchedPlace.name}</span> — Намери парцела и нарисувай границите му
+              📍 <span className="font-semibold">{searchedPlace.name}</span> {t("addParcel.step1.placeFound")}
             </div>
           )}
 
           {/* Toolbar */}
           <div className="absolute left-4 top-[120px] z-10 flex flex-col gap-2 rounded-2xl border border-border bg-card p-3 shadow-elevated max-w-[calc(100vw-2rem)]">
-            <div className="text-sm font-semibold">Стъпка 1: Начертай парцела</div>
-            <p className="text-xs text-muted-foreground">Кликни за вертекси, двоен клик за край.</p>
+            <div className="text-sm font-semibold">{t("addParcel.step1.title")}</div>
+            <p className="text-xs text-muted-foreground">{t("addParcel.step1.hint")}</p>
             <div className="flex gap-2">
               <Button size="sm" onClick={startDrawing} disabled={drawing} className="bg-primary hover:bg-primary/90">
                 <Pencil className="mr-1.5 h-4 w-4" />
-                {drawing ? "Чертая..." : "Начертай парцел"}
+                {drawing ? t("addParcel.step1.drawing") : t("addParcel.step1.draw")}
               </Button>
               {polygon.length >= 3 && (
                 <Button size="sm" variant="outline" onClick={clearDrawing}>
@@ -283,28 +287,28 @@ function AddParcel() {
           {/* Bottom bar */}
           <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-4 rounded-2xl border border-border bg-card px-5 py-3 shadow-elevated">
             <div className="text-sm">
-              <span className="text-muted-foreground">Площ: </span>
-              <span className="font-bold text-primary">{area.toFixed(2)} ха</span>
+              <span className="text-muted-foreground">{t("addParcel.step1.area")} </span>
+              <span className="font-bold text-primary">{area.toFixed(2)} {t("units.ha")}</span>
             </div>
             <Button onClick={() => setStep(2)} disabled={polygon.length < 3} className="bg-primary hover:bg-primary/90">
-              Напред <ArrowRight className="ml-1 h-4 w-4" />
+              {t("addParcel.step1.next")} <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-2xl px-4 py-8">
-            <h1 className="text-2xl font-bold">Детайли за посева</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Тази информация настройва FAO-56 калкулацията за твоя парцел.</p>
+            <h1 className="text-2xl font-bold">{t("addParcel.step2.title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t("addParcel.step2.subtitle")}</p>
 
             <div className="mt-8 space-y-6">
               <div>
-                <Label htmlFor="name">Име на парцела</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Нива при Пловдив" className="mt-1.5" />
+                <Label htmlFor="name">{t("addParcel.step2.name")}</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("addParcel.step2.namePlaceholder")} className="mt-1.5" />
               </div>
 
               <div>
-                <Label>Вид посев</Label>
+                <Label>{t("addParcel.step2.crop")}</Label>
                 <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
                   {(Object.keys(CROP_LABELS) as CropType[]).map((c) => (
                     <button
@@ -317,19 +321,19 @@ function AddParcel() {
                     >
                       {crop === c && <Check className="absolute right-1.5 top-1.5 h-3.5 w-3.5 text-primary" />}
                       <span className="text-2xl">{CROP_ICONS[c]}</span>
-                      <span className="font-medium">{CROP_LABELS[c]}</span>
+                      <span className="font-medium">{t(`crops.${c}`)}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="phase">Фаза на растеж</Label>
+                <Label htmlFor="phase">{t("addParcel.step2.phase")}</Label>
                 <Select value={phase} onValueChange={(v) => setPhase(v as GrowthPhase)}>
                   <SelectTrigger id="phase" className="mt-1.5"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(Object.keys(PHASE_LABELS) as GrowthPhase[]).map((p) => (
-                      <SelectItem key={p} value={p}>{PHASE_LABELS[p]}</SelectItem>
+                      <SelectItem key={p} value={p}>{t(`phases.${p}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -338,7 +342,7 @@ function AddParcel() {
               <div>
                 <Label htmlFor="pump" className="flex items-center gap-1.5">
                   <Gauge className="h-3.5 w-3.5" />
-                  Дебит на помпата (м³/час) <span className="text-xs font-normal text-muted-foreground">— по избор</span>
+                  {t("addParcel.step2.pump")} <span className="text-xs font-normal text-muted-foreground">{t("addParcel.step2.pumpOptional")}</span>
                 </Label>
                 <Input
                   id="pump"
@@ -347,33 +351,33 @@ function AddParcel() {
                   step="0.1"
                   value={pumpFlow}
                   onChange={(e) => setPumpFlow(e.target.value)}
-                  placeholder="напр. 6"
+                  placeholder={t("addParcel.step2.pumpPlaceholder")}
                   className="mt-1.5"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Използва се за изчисляване на колко часа трябва да работи помпата за препоръчаното количество вода.
+                  {t("addParcel.step2.pumpHelp")}
                 </p>
               </div>
 
               {/* Preview */}
               <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
-                <div className="text-xs font-semibold uppercase tracking-wide text-primary">Преглед</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-primary">{t("addParcel.step2.preview")}</div>
                 <div className="mt-3 flex items-center gap-3">
                   <span className="text-3xl">{CROP_ICONS[crop]}</span>
                   <div>
-                    <div className="font-semibold">{name || "Нов парцел"}</div>
-                    <div className="text-sm text-muted-foreground">{CROP_LABELS[crop]} · {PHASE_LABELS[phase]} · {area.toFixed(2)} ха</div>
+                    <div className="font-semibold">{name || t("addParcel.step2.newParcel")}</div>
+                    <div className="text-sm text-muted-foreground">{t(`crops.${crop}`)} · {t(`phases.${phase}`)} · {area.toFixed(2)} {t("units.ha")}</div>
                   </div>
                 </div>
                 <div className="mt-3 text-xs text-muted-foreground">
-                  Първа спътникова анализа: <span className="font-semibold text-foreground">{firstAnalysis}</span>
+                  {t("addParcel.step2.firstAnalysis")} <span className="font-semibold text-foreground">{firstAnalysis}</span>
                 </div>
               </div>
 
               <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-1 h-4 w-4" /> Назад</Button>
+                <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-1 h-4 w-4" /> {t("common.back")}</Button>
                 <Button onClick={handleSave} disabled={saving} className="flex-1 bg-primary hover:bg-primary/90">
-                  {saving ? "Запазване..." : "Запази парцела"}
+                  {saving ? t("addParcel.step2.saving") : t("addParcel.step2.save")}
                 </Button>
               </div>
             </div>
