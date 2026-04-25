@@ -570,6 +570,8 @@ function Dashboard() {
                   const s = STATUS_COLORS[p.status];
                   const active = p.id === selectedId;
                   const da = deficitByParcel.get(p.id);
+                  const ring = p.geometry?.coordinates?.[0] as [number, number][] | undefined;
+                  const hasBoundary = !!ring && ring.length >= 3;
                   const deficitBadge = da
                     ? da.priority === "critical"
                       ? { text: "Пълна доза", cls: "bg-emerald-100 text-emerald-700" }
@@ -582,21 +584,33 @@ function Dashboard() {
                       <button
                         onClick={() => { setSelectedId(p.id); setSidebarOpen(false); }}
                         className={`w-full rounded-xl border p-3 text-left transition ${
-                          active ? "border-primary bg-primary/5 shadow-card" : "border-border bg-card hover:border-primary/40 hover:bg-accent/30"
+                          active
+                            ? "border-l-[3px] border-l-emerald-600 border-y border-r border-y-emerald-200 border-r-emerald-200 bg-emerald-50 shadow-card"
+                            : "border-border bg-card hover:border-primary/40 hover:bg-accent/30"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-xl shrink-0">{CROP_ICONS[p.crop_type]}</span>
                             <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 truncate text-sm font-semibold">
+                              <div className={`flex flex-wrap items-center gap-1.5 text-sm font-semibold ${active ? "text-emerald-800" : ""}`}>
                                 <span
                                   className={`h-1.5 w-1.5 rounded-full ${
                                     realtimeStatus === "connected" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"
                                   }`}
                                   title={realtimeStatus === "connected" ? "Realtime активен" : "Офлайн"}
                                 />
-                                {p.name}
+                                <span className="truncate">{p.name}</span>
+                                {active && hasBoundary && (
+                                  <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-700">
+                                    На картата →
+                                  </span>
+                                )}
+                                {!hasBoundary && (
+                                  <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase text-muted-foreground">
+                                    Без граници
+                                  </span>
+                                )}
                               </div>
                               <div className="text-xs text-muted-foreground">{CROP_LABELS[p.crop_type]} · {p.area_hectares} ха</div>
                             </div>
