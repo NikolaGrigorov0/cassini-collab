@@ -395,18 +395,6 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             onRetry={onRetrySoil}
           />
 
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-            <Button type="button" variant="outline" size="sm" onClick={testSoilApi} disabled={soilDebugLoading} className="w-full">
-              {soilDebugLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-              🔍 Тест почва
-            </Button>
-            {soilDebugRaw && (
-              <pre className="mt-3 max-h-72 overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-[11px] leading-relaxed text-foreground">
-                {soilDebugRaw}
-              </pre>
-            )}
-          </div>
-
           {/* Forecast */}
           {liveData && liveData.forecast.length > 0 ? (
             <ForecastChart forecast={liveData.forecast} source={liveData.source} areaHectares={parcel.area_hectares} />
