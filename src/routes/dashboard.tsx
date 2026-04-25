@@ -287,7 +287,8 @@ function Dashboard() {
     if (!selectedId) return;
     const parcel = parcels.find((p) => p.id === selectedId);
     if (!parcel) return;
-    if (parcel.soil_type) return; // already enriched
+    // Treat "Неизвестна" as not-enriched so we retry once the API/logic is fixed.
+    if (parcel.soil_type && parcel.soil_type !== "Неизвестна") return;
     let cancelled = false;
     setSoilLoadingId(selectedId);
     setSoilErrorByParcel((m) => {
