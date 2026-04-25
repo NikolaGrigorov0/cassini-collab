@@ -53,6 +53,7 @@ function AddParcel() {
   const [crop, setCrop] = useState<CropType>("wheat");
   const [phase, setPhase] = useState<GrowthPhase>("development");
   const [pumpFlow, setPumpFlow] = useState<string>("");
+  const [sowingDate, setSowingDate] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -220,6 +221,7 @@ function AddParcel() {
       area_hectares: Number(area.toFixed(2)),
       geometry: JSON.stringify(geometry),
       pump_flow_m3h: pumpFlow.trim() ? Number(pumpFlow) : null,
+      sowing_date: sowingDate || null,
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -337,6 +339,23 @@ function AddParcel() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="sowing-date" className="flex items-center gap-1.5">
+                  📅 Дата на засяване
+                </Label>
+                <Input
+                  id="sowing-date"
+                  type="date"
+                  value={sowingDate}
+                  onChange={(e) => setSowingDate(e.target.value)}
+                  max={new Date().toISOString().slice(0, 10)}
+                  className="mt-1.5"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Системата автоматично ще изчислява текущата фенофаза от тази дата.
+                </p>
               </div>
 
               <div>

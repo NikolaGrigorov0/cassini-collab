@@ -18,6 +18,7 @@ export interface MockParcel {
   recorded_at: string;
   forecast: { day: string; dose: number; rain: boolean }[];
   pump_flow_m3h?: number | null;
+  sowing_date?: string | null;
   soil_type?: string | null;
   soil_type_wrb?: string | null;
   soil_type_bg?: string | null;

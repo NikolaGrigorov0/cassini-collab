@@ -53,6 +53,7 @@ export function EditParcelModal({ open, parcel, onOpenChange, onSaved, onRedrawB
   const [crop, setCrop] = useState<CropType>("wheat");
   const [phase, setPhase] = useState<GrowthPhase>("mid");
   const [areaHa, setAreaHa] = useState<number>(0);
+  const [sowingDate, setSowingDate] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export function EditParcelModal({ open, parcel, onOpenChange, onSaved, onRedrawB
     setCrop(parcel.crop_type);
     setPhase(parcel.growth_phase);
     setAreaHa(parcel.area_hectares);
+    setSowingDate(parcel.sowing_date ?? "");
   }, [parcel]);
 
   if (!parcel) return null;
@@ -68,7 +70,8 @@ export function EditParcelModal({ open, parcel, onOpenChange, onSaved, onRedrawB
   const cropChanged = crop !== parcel.crop_type;
   const phaseChanged = phase !== parcel.growth_phase;
   const areaChanged = Math.abs(areaHa - parcel.area_hectares) > 0.001;
-  const recalcNeeded = cropChanged || phaseChanged || areaChanged;
+  const sowingChanged = (sowingDate || null) !== (parcel.sowing_date ?? null);
+  const recalcNeeded = cropChanged || phaseChanged || areaChanged || sowingChanged;
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -88,6 +91,7 @@ export function EditParcelModal({ open, parcel, onOpenChange, onSaved, onRedrawB
           crop_type: crop,
           growth_phase: phase,
           area_hectares: areaHa,
+          sowing_date: sowingDate || null,
         })
         .eq("id", parcel.id);
       if (error) throw error;
@@ -113,6 +117,7 @@ export function EditParcelModal({ open, parcel, onOpenChange, onSaved, onRedrawB
         crop_type: crop,
         growth_phase: phase,
         area_hectares: areaHa,
+        sowing_date: sowingDate || null,
       });
       toast.success("Парцелът е обновен и данните се преизчисляват");
       onOpenChange(false);
@@ -201,6 +206,20 @@ export function EditParcelModal({ open, parcel, onOpenChange, onSaved, onRedrawB
             />
             <p className="text-xs text-muted-foreground">
               {(areaHa * 10).toFixed(2)} декара
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="parcel-sowing">📅 Дата на засяване</Label>
+            <Input
+              id="parcel-sowing"
+              type="date"
+              value={sowingDate}
+              onChange={(e) => setSowingDate(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Текущата фенофаза се изчислява автоматично от датата на засяване.
             </p>
           </div>
 

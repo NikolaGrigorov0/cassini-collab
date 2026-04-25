@@ -302,6 +302,48 @@ export type Database = {
         }
         Relationships: []
       }
+      parcel_growth: {
+        Row: {
+          current_phase_id: string | null
+          id: string
+          is_manual_override: boolean
+          manual_override_at: string | null
+          parcel_id: string
+          updated_at: string
+        }
+        Insert: {
+          current_phase_id?: string | null
+          id?: string
+          is_manual_override?: boolean
+          manual_override_at?: string | null
+          parcel_id: string
+          updated_at?: string
+        }
+        Update: {
+          current_phase_id?: string | null
+          id?: string
+          is_manual_override?: boolean
+          manual_override_at?: string | null
+          parcel_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_growth_current_phase_id_fkey"
+            columns: ["current_phase_id"]
+            isOneToOne: false
+            referencedRelation: "phenophases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_growth_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: true
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parcel_history: {
         Row: {
           changed_at: string
@@ -362,6 +404,7 @@ export type Database = {
           soil_type_bg: string | null
           soil_type_wrb: string | null
           soil_wp_pct: number | null
+          sowing_date: string | null
           user_id: string
         }
         Insert: {
@@ -390,6 +433,7 @@ export type Database = {
           soil_type_bg?: string | null
           soil_type_wrb?: string | null
           soil_wp_pct?: number | null
+          sowing_date?: string | null
           user_id: string
         }
         Update: {
@@ -418,6 +462,7 @@ export type Database = {
           soil_type_bg?: string | null
           soil_type_wrb?: string | null
           soil_wp_pct?: number | null
+          sowing_date?: string | null
           user_id?: string
         }
         Relationships: []
@@ -426,7 +471,11 @@ export type Database = {
         Row: {
           created_at: string
           crop_type: string
+          days_from_sowing_end: number | null
+          days_from_sowing_start: number | null
+          description: string | null
           id: string
+          is_critical: boolean
           kc_base: number
           mad_threshold: number
           order_index: number
@@ -436,7 +485,11 @@ export type Database = {
         Insert: {
           created_at?: string
           crop_type: string
+          days_from_sowing_end?: number | null
+          days_from_sowing_start?: number | null
+          description?: string | null
           id?: string
+          is_critical?: boolean
           kc_base: number
           mad_threshold?: number
           order_index: number
@@ -446,7 +499,11 @@ export type Database = {
         Update: {
           created_at?: string
           crop_type?: string
+          days_from_sowing_end?: number | null
+          days_from_sowing_start?: number | null
+          description?: string | null
           id?: string
+          is_critical?: boolean
           kc_base?: number
           mad_threshold?: number
           order_index?: number

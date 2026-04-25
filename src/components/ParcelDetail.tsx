@@ -383,7 +383,13 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           </div>
 
           {/* Phenophase timeline + dynamic Kc */}
-          <PhenophaseTimeline cropType={parcel.crop_type} ndvi={ndvi} />
+          <PhenophaseTimeline
+            parcelId={parcel.id}
+            cropType={parcel.crop_type}
+            sowingDate={parcel.sowing_date ?? null}
+            ndvi={ndvi}
+            onEditDetails={onEditDetails}
+          />
 
           {/* 7-day weather forecast (Open-Meteo) for this parcel */}
           <WeatherForecast geometry={parcel.geometry} />
