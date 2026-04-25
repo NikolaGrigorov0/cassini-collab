@@ -275,21 +275,37 @@ export function ParcelMap({ parcels, selectedId, onSelect, center = [24.75, 42.1
     const maxZoom = spanKm > 50 ? 10 : 17;
 
     const fitAndPulse = () => {
+      // Adapt padding to canvas size — MapLibre throws / silently fails if
+      // padding consumes more than the available width or height.
+      const canvas = map.getCanvas();
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      // Detail panel is max-w-[400px]; reserve right space only when there's room.
+      const rightPad = w > 900 ? 420 : w > 700 ? 280 : 20;
+      const sidePad = w > 700 ? 60 : 20;
+      const vertPad = h > 500 ? 80 : 30;
+      const padding = { top: vertPad, bottom: vertPad, left: sidePad, right: rightPad };
       console.log("[map.fitBounds] parcel click", {
         parcelId: selectedId,
         parcelName: parcel?.name,
         bbox: [minLon, minLat, maxLon, maxLat],
         spanKm,
         maxZoom,
+        canvas: { w, h },
+        padding,
       });
-      map.fitBounds(
-        [[minLon, minLat], [maxLon, maxLat]],
-        {
-          padding: { top: 100, bottom: 100, left: 60, right: 480 },
-          duration: 900,
-          maxZoom,
-        },
-      );
+      try {
+        map.fitBounds(
+          [[minLon, minLat], [maxLon, maxLat]],
+          { padding, duration: 900, maxZoom, essential: true },
+        );
+      } catch (err) {
+        // Fallback to flyTo on the centroid if fitBounds rejects the padding.
+        console.warn("[map.fitBounds] failed, falling back to flyTo", err);
+        const cx = (minLon + maxLon) / 2;
+        const cy = (minLat + maxLat) / 2;
+        map.flyTo({ center: [cx, cy], zoom: Math.min(16, maxZoom), duration: 900, essential: true });
+      }
 
       // Pulse the outline of the selected parcel for 2s.
       if (pulseRafRef.current != null) cancelAnimationFrame(pulseRafRef.current);
