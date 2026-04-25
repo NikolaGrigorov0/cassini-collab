@@ -20,6 +20,7 @@ import { WaterBattery, ndmiToMoisturePct } from "@/components/WaterBattery";
 import { convertWater, formatHours, formatPerDka, formatTotal, pumpRuntimeHours } from "@/lib/waterUnits";
 import { PhenophaseTimeline } from "@/components/PhenophaseTimeline";
 import { QuickIrrigationActions } from "@/components/QuickIrrigationActions";
+import { WateringLog } from "@/components/WateringLog";
 import { SoilBalanceChart } from "@/components/SoilBalanceChart";
 import { ParcelHistoryDialog } from "@/components/ParcelHistoryDialog";
 import { WeatherForecast } from "@/components/WeatherForecast";
@@ -332,13 +333,22 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           {/* 7-day weather forecast (Open-Meteo) for this parcel */}
           <WeatherForecast geometry={parcel.geometry} />
 
-          {/* Quick logging: irrigated / rained today */}
+          {/* Watering log — "Полях днес" with NDMI correction + history */}
+          <WateringLog
+            parcelId={parcel.id}
+            parcelName={parcel.name}
+            cropType={parcel.crop_type}
+            growthPhase={parcel.growth_phase}
+            currentNDMI={ndmi}
+            recommendedDoseMM={dose}
+          />
+
+          {/* Rain logging stays separate */}
           <QuickIrrigationActions
             parcelId={parcel.id}
             parcelName={parcel.name}
             geometry={parcel.geometry}
             areaHectares={parcel.area_hectares}
-            suggestedDoseMm={dose > 0 ? dose : undefined}
           />
 
           {/* Soil moisture balance trend (auto-updated daily by cron) */}
