@@ -16,6 +16,7 @@ import {
   formatNextCheck,
   nextCheckDate,
   recalculateAfterIrrigation,
+  recomputeForecast,
   reverseIrrigation,
 } from "@/lib/irrigationCorrection";
 
@@ -32,6 +33,18 @@ interface Props {
   currentStatus?: "green" | "yellow" | "red";
   /** Soil type label from ISRIC enrichment (drives soil-aware NDMI lift). */
   soilType?: string | null;
+  /** Called after a successful confirm/undo so the parent can patch its
+   *  liveData (dose, status, reason, NDMI, forecast) and the UI reflects
+   *  the new soil-moisture state immediately. */
+  onIrrigationChange?: (patch: {
+    ndmi: number;
+    dose_mm: number;
+    status: "green" | "yellow" | "red";
+    reason: string;
+    forecastTransform: (
+      prev: { date: string; dose_mm: number; status: "green" | "yellow" | "red" }[],
+    ) => { date: string; dose_mm: number; status: "green" | "yellow" | "red" }[];
+  }) => void;
 }
 
 interface IrrigationRow {
@@ -69,6 +82,7 @@ export function WateringLog({
   recommendedDoseMM,
   currentStatus,
   soilType,
+  onIrrigationChange,
 }: Props) {
   const defaultDose = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
   const [open, setOpen] = useState(false);
