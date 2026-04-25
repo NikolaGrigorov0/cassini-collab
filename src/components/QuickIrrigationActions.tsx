@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CloudRain, Loader2, MapPin, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { CheckCircle2, CloudRain, Loader2, MapPin, RefreshCw, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,7 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications";
 import { getRainForGeometry, type RainInfo } from "@/lib/weather";
 import { convertWater } from "@/lib/waterUnits";
-import { recalculateAfterIrrigation, recomputeForecast } from "@/lib/irrigationCorrection";
+import {
+   recalculateAfterIrrigation,
+   recomputeForecast,
+   reverseIrrigation,
+ } from "@/lib/irrigationCorrection";
 import { toast } from "sonner";
 
 interface Props {
@@ -47,6 +51,16 @@ interface Props {
 
 type ActionKind = "rain" | null;
 
+interface RainEventRow {
+  id: string;
+  amount_mm: number;
+  dose_mm: number | null;
+  created_at: string;
+  ndmi_before: number | null;
+  status_before: string | null;
+  original_dose_mm: number | null;
+}
+
 export function QuickIrrigationActions({
   parcelId,
   parcelName,
@@ -67,6 +81,34 @@ export function QuickIrrigationActions({
   const [rainLoading, setRainLoading] = useState(false);
   const [rainInfo, setRainInfo] = useState<RainInfo | null>(null);
   const [rainError, setRainError] = useState<string | null>(null);
+
+  // Today's rain event (drives State 2 card + undo flow)
+  const [todaysRain, setTodaysRain] = useState<RainEventRow | null>(null);
+  const [confirmUndo, setConfirmUndo] = useState(false);
+  const [undoing, setUndoing] = useState(false);
+
+  const loadTodaysRain = useCallback(async () => {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const { data, error } = await supabase
+      .from("irrigation_events")
+      .select("id, amount_mm, dose_mm, created_at, ndmi_before, status_before, original_dose_mm, undone, method, parcel_id")
+      .eq("parcel_id", parcelId)
+      .eq("method", "rain")
+      .eq("undone", false)
+      .gte("created_at", startOfDay.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error || !data || data.length === 0) {
+      setTodaysRain(null);
+      return;
+    }
+    setTodaysRain(data[0] as unknown as RainEventRow);
+  }, [parcelId]);
+
+  useEffect(() => {
+    void loadTodaysRain();
+  }, [loadTodaysRain]);
 
   const lookupRain = async () => {
     if (!geometry) {
@@ -132,20 +174,24 @@ export function QuickIrrigationActions({
       );
       const statusBefore = recommendedDoseMM <= 0 ? "green" : recommendedDoseMM < 10 ? "yellow" : "red";
 
-      const { error } = await supabase.from("irrigation_events").insert({
-        parcel_id: parcelId,
-        amount_mm: mm,
-        dose_mm: mm,
-        method: "rain",
-        ndmi_before: currentNDMI,
-        ndmi_after: correction.correctedNDMI,
-        status_before: statusBefore,
-        status_after: correction.newStatus,
-        original_dose_mm: recommendedDoseMM,
-        notes: rainInfo
-          ? `Авто от Open-Meteo: ${rainInfo.place} (${rainInfo.lat.toFixed(3)}, ${rainInfo.lon.toFixed(3)})`
-          : null,
-      });
+      const { data: inserted, error } = await supabase
+        .from("irrigation_events")
+        .insert({
+          parcel_id: parcelId,
+          amount_mm: mm,
+          dose_mm: mm,
+          method: "rain",
+          ndmi_before: currentNDMI,
+          ndmi_after: correction.correctedNDMI,
+          status_before: statusBefore,
+          status_after: correction.newStatus,
+          original_dose_mm: recommendedDoseMM,
+          notes: rainInfo
+            ? `Авто от Open-Meteo: ${rainInfo.place} (${rainInfo.lat.toFixed(3)}, ${rainInfo.lon.toFixed(3)})`
+            : null,
+        } as never)
+        .select("id, amount_mm, dose_mm, created_at, ndmi_before, status_before, original_dose_mm")
+        .single();
       if (error) throw error;
 
       // Persist the corrected recommendation.
@@ -169,6 +215,7 @@ export function QuickIrrigationActions({
       });
 
       toast.success("Валежът е записан");
+      setTodaysRain((inserted as unknown as RainEventRow) ?? null);
       onIrrigationChange?.({
         ndmi: correction.correctedNDMI,
         dose_mm: correction.newDose,
@@ -185,21 +232,128 @@ export function QuickIrrigationActions({
     }
   };
 
+  const performUndo = async () => {
+    if (!todaysRain) return;
+    setUndoing(true);
+    try {
+      const ndmiBefore = todaysRain.ndmi_before ?? currentNDMI;
+      const statusBefore = todaysRain.status_before ?? "yellow";
+      const origDose = todaysRain.original_dose_mm ?? recommendedDoseMM;
+      const restored = reverseIrrigation(ndmiBefore, statusBefore, origDose);
+
+      const { error: updErr } = await supabase
+        .from("irrigation_events")
+        .update({ undone: true, undone_at: new Date().toISOString() } as never)
+        .eq("id", todaysRain.id);
+      if (updErr) throw updErr;
+
+      const validUntil = new Date(Date.now() + 7 * 86400_000).toISOString();
+      await supabase.from("irrigation_recommendations").insert({
+        parcel_id: parcelId,
+        dose_mm: restored.restoredDose,
+        status: restored.restoredStatus,
+        reason: "Валежът е отменен. Върнати са оригиналните стойности.",
+        valid_until: validUntil,
+        data_source: "undo-correction",
+        confidence_pct: 80,
+      });
+
+      toast.success("↩ Валежът е отменен успешно", { duration: 3000 });
+      setTodaysRain(null);
+      setConfirmUndo(false);
+      onIrrigationChange?.({
+        ndmi: restored.restoredNDMI,
+        dose_mm: restored.restoredDose,
+        status: restored.restoredStatus,
+        reason: restored.restoredReason,
+        forecastTransform: (prev) =>
+          recomputeForecast(prev, restored.restoredNDMI, restored.restoredNDMI, restored.restoredDose),
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Грешка при отмяна");
+    } finally {
+      setUndoing(false);
+    }
+  };
+
   return (
     <>
-      <div className="flex flex-col gap-1">
-        <Button
-          variant="outline"
-          className="w-full border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-700 dark:text-sky-300 dark:hover:bg-sky-950"
-          onClick={openRain}
-        >
-          <CloudRain className="mr-2 h-4 w-4" />
-          🌧️ Вали днес
-        </Button>
-        <p className="px-1 text-[10px] leading-tight text-muted-foreground">
-          Авто от метео за района
-        </p>
-      </div>
+      {todaysRain ? (
+        /* STATE 2: Rain logged today — confirmed card with undo */
+        <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 dark:border-sky-800 dark:bg-sky-950/40 animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-2 text-sky-800 dark:text-sky-200">
+            <CheckCircle2 className="h-4 w-4" />
+            <span className="text-sm font-bold">
+              Регистриран валеж в{" "}
+              {new Date(todaysRain.created_at).toLocaleTimeString("bg-BG", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {(() => {
+              const mmVal = todaysRain.dose_mm ?? todaysRain.amount_mm;
+              const m3Val =
+                areaHectares && areaHectares > 0
+                  ? convertWater(mmVal, areaHectares).totalM3
+                  : mmVal;
+              return `${mmVal.toFixed(1)} мм · ${m3Val.toFixed(1)} м³ общо`;
+            })()}
+          </div>
+          <div className="mt-2 flex justify-end">
+            {!confirmUndo ? (
+              <button
+                type="button"
+                onClick={() => setConfirmUndo(true)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                <Undo2 className="h-3 w-3" /> Отмени
+              </button>
+            ) : null}
+          </div>
+          {confirmUndo && (
+            <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200 animate-in fade-in">
+              <p>Сигурен ли си? Данните ще се върнат към преди валежа.</p>
+              <div className="mt-2 flex justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => setConfirmUndo(false)}
+                  disabled={undoing}
+                >
+                  Не
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 bg-amber-600 text-xs text-white hover:bg-amber-700"
+                  onClick={performUndo}
+                  disabled={undoing}
+                >
+                  {undoing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                  Да, отмени
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* STATE 1: default button */
+        <div className="flex flex-col gap-1">
+          <Button
+            variant="outline"
+            className="w-full border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-700 dark:text-sky-300 dark:hover:bg-sky-950"
+            onClick={openRain}
+          >
+            <CloudRain className="mr-2 h-4 w-4" />
+            🌧️ Вали днес
+          </Button>
+          <p className="px-1 text-[10px] leading-tight text-muted-foreground">
+            Авто от метео за района
+          </p>
+        </div>
+      )}
 
       <Dialog open={kind !== null} onOpenChange={(o) => !o && close()}>
         <DialogContent>
