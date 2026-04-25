@@ -215,6 +215,15 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           </Button>
         </div>
 
+        {/* Growth phase indicator — directly below header */}
+        <div className="border-b border-border bg-card/50 px-4 py-3">
+          <GrowthPhaseIndicator
+            cropType={parcel.crop_type}
+            growthPhase={parcel.growth_phase}
+            onChangePhase={onEditDetails}
+          />
+        </div>
+
         {/* Missing-boundary warning */}
         {(() => {
           const ring = parcel.geometry?.coordinates?.[0] as [number, number][] | undefined;
