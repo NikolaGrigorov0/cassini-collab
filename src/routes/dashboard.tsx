@@ -316,6 +316,11 @@ function Dashboard() {
         if (!r.ok) throw new Error(j?.error ?? `HTTP ${r.status}`);
         return j as {
           soil_type: string | null;
+          soil_type_wrb: string | null;
+          soil_type_bg: string | null;
+          soil_fc_pct: number | null;
+          soil_wp_pct: number | null;
+          soil_awc_pct: number | null;
           soil_ph: number | null;
           soil_organic_carbon: number | null;
           soil_clay_pct: number | null;
@@ -331,6 +336,11 @@ function Dashboard() {
               ? {
                   ...p,
                   soil_type: j.soil_type ?? p.soil_type,
+                  soil_type_wrb: j.soil_type_wrb ?? p.soil_type_wrb,
+                  soil_type_bg: j.soil_type_bg ?? p.soil_type_bg,
+                  soil_fc_pct: j.soil_fc_pct ?? p.soil_fc_pct,
+                  soil_wp_pct: j.soil_wp_pct ?? p.soil_wp_pct,
+                  soil_awc_pct: j.soil_awc_pct ?? p.soil_awc_pct,
                   soil_ph: j.soil_ph ?? p.soil_ph,
                   soil_organic_carbon: j.soil_organic_carbon ?? p.soil_organic_carbon,
                   soil_clay_pct: j.soil_clay_pct ?? p.soil_clay_pct,
