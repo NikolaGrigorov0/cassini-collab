@@ -15,25 +15,30 @@ interface ReqBody { parcel_id: string }
 
 // SoilGrids REST: returns mean values for sand/clay/silt + pH + organic carbon.
 // Docs: https://rest.isric.org/soilgrids/v2.0/docs
-// We use 0-30cm depth for richer agronomic context (pH, SOC) and keep texture
-// at the same depth for consistency.
+// IMPORTANT: SoilGrids depths are 0-5cm, 5-15cm, 15-30cm, 30-60cm, 60-100cm,
+// 100-200cm. There is NO "0-30cm" — passing it returns an empty layers array.
+// We request the top three (0-5, 5-15, 15-30) and average them for the root zone.
 async function fetchSoilGridsAt(lat: number, lon: number) {
   const url =
     `https://rest.isric.org/soilgrids/v2.0/properties/query?lat=${lat}&lon=${lon}` +
     `&property=sand&property=clay&property=silt&property=phh2o&property=soc` +
-    `&depth=0-30cm&value=mean`;
+    `&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=mean`;
   const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error(`SoilGrids ${r.status}`);
   const j = (await r.json()) as {
     properties?: { layers?: Array<{ name: string; depths?: Array<{ values?: { mean?: number } }> }> };
   };
   const layers = j.properties?.layers ?? [];
-  // SoilGrids returns d_factor scaled values. Texture & SOC are g/kg ×10 so /10 → %.
-  // pH is pH × 10.
+  // SoilGrids returns d_factor scaled values. Texture is g/kg ×10 so /10 → %.
+  // pH is pH × 10. SOC is dg/kg (i.e. g/kg × 10).
+  // Average across the top three depths to get a 0–30cm root-zone value.
   const raw = (name: string): number | null => {
     const l = layers.find((x) => x.name === name);
-    const v = l?.depths?.[0]?.values?.mean;
-    return typeof v === "number" ? v : null;
+    const means = (l?.depths ?? [])
+      .map((d) => d?.values?.mean)
+      .filter((v): v is number => typeof v === "number");
+    if (means.length === 0) return null;
+    return means.reduce((a, b) => a + b, 0) / means.length;
   };
   const pct = (name: string): number | null => {
     const v = raw(name);
@@ -47,7 +52,7 @@ async function fetchSoilGridsAt(lat: number, lon: number) {
       const v = raw("phh2o");
       return v == null ? null : Math.round((v / 10) * 100) / 100;
     })(),
-    soc: pct("soc"), // g/kg → already ~ "g/kg ÷ 10" then expressed as g/kg; agronomically use as g/kg
+    soc: pct("soc"), // dg/kg ÷ 10 → g/kg (agronomic units)
   };
 }
 
