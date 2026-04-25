@@ -28,6 +28,7 @@ import { SoilBalanceChart } from "@/components/SoilBalanceChart";
 import { ParcelHistoryDialog } from "@/components/ParcelHistoryDialog";
 import { WeatherForecast } from "@/components/WeatherForecast";
 import { SoilInfoCard } from "@/components/SoilInfoCard";
+import { SatelliteDataSection } from "@/components/SatelliteDataSection";
 
 export interface LiveParcelData {
   ndmi: number;
@@ -448,6 +449,18 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             loading={soilLoading}
             error={soilError}
             onRetry={onRetrySoil}
+          />
+
+          {/* Satellite data sources — which satellites + what each value means */}
+          <SatelliteDataSection
+            parcelId={parcel.id}
+            parcelCreatedAt={(parcel as unknown as { created_at?: string }).created_at ?? null}
+            ndmi={ndmi}
+            ndvi={ndvi}
+            eto={liveData?.eto ?? null}
+            fcPct={parcel.soil_fc_pct ?? null}
+            wpPct={parcel.soil_wp_pct ?? null}
+            dataSource={liveData?.source ?? null}
           />
 
           {/* Forecast */}
