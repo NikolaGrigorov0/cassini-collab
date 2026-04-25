@@ -40,6 +40,12 @@ type ParcelRow = {
   area_hectares: number;
   geometry: string;
   pump_flow_m3h: number | null;
+  soil_type: string | null;
+  soil_ph: number | null;
+  soil_organic_carbon: number | null;
+  soil_clay_pct: number | null;
+  soil_sand_pct: number | null;
+  soil_silt_pct: number | null;
 };
 
 type RecRow = {
@@ -108,7 +114,7 @@ function Dashboard() {
       setLoadingData(true);
       const { data: p, error } = await supabase
         .from("parcels")
-        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h")
+        .select("id, name, crop_type, growth_phase, area_hectares, geometry, pump_flow_m3h, soil_type, soil_ph, soil_organic_carbon, soil_clay_pct, soil_sand_pct, soil_silt_pct")
         .order("created_at", { ascending: false });
       if (error) {
         toast.error(error.message);
@@ -170,6 +176,12 @@ function Dashboard() {
           recorded_at: nd?.recorded_at ?? new Date().toISOString(),
           forecast: [],
           pump_flow_m3h: row.pump_flow_m3h,
+          soil_type: row.soil_type,
+          soil_ph: row.soil_ph == null ? null : Number(row.soil_ph),
+          soil_organic_carbon: row.soil_organic_carbon == null ? null : Number(row.soil_organic_carbon),
+          soil_clay_pct: row.soil_clay_pct == null ? null : Number(row.soil_clay_pct),
+          soil_sand_pct: row.soil_sand_pct == null ? null : Number(row.soil_sand_pct),
+          soil_silt_pct: row.soil_silt_pct == null ? null : Number(row.soil_silt_pct),
         };
       });
       if (!cancelled) {
