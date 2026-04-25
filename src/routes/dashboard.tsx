@@ -703,6 +703,10 @@ function Dashboard() {
               loadingLive={liveLoadingId === selected.id}
               soilLoading={soilLoadingId === selected.id}
               soilError={soilErrorByParcel[selected.id] ?? null}
+              onRetrySoil={() => {
+                setParcels((prev) => prev.map((p) => p.id === selected.id ? { ...p, soil_type: null, soil_type_bg: null } : p));
+                setSoilRetryNonce((n) => n + 1);
+              }}
               isEditing={false}
               editAreaHa={draftAreaHa}
               onEditDetails={() => setEditDetailsId(selected.id)}
