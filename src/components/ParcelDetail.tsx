@@ -21,6 +21,7 @@ import { ForecastChart, type ForecastDay } from "@/components/ForecastChart";
 import { WaterBattery, ndmiToMoisturePct } from "@/components/WaterBattery";
 import { convertWater, formatHours, formatPerDka, formatTotal, pumpRuntimeHours } from "@/lib/waterUnits";
 import { PhenophaseTimeline } from "@/components/PhenophaseTimeline";
+import { GrowthPhaseIndicator } from "@/components/GrowthPhaseIndicator";
 import { QuickIrrigationActions } from "@/components/QuickIrrigationActions";
 import { WateringLog } from "@/components/WateringLog";
 import { SoilBalanceChart } from "@/components/SoilBalanceChart";
