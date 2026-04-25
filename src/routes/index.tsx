@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Droplets, Satellite, MapPinned, ArrowRight, Sprout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
-import { TryItYourselfMini } from "@/components/TryItYourselfMini";
 import { CROP_ICONS, CROP_LABELS } from "@/lib/mockData";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -66,11 +65,11 @@ function Landing() {
               {t("landing.hero.subtitle")}
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a href="#try-it-yourself">
+              <Link to="/dashboard">
                 <Button size="lg" className="h-12 bg-primary px-6 text-base hover:bg-primary/90 shadow-elevated">
                   {t("landing.hero.ctaPrimary")} <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
-              </a>
+              </Link>
               <Link to="/demo">
                 <Button size="lg" variant="outline" className="h-12 px-6 text-base border-primary/40 hover:bg-primary/10">
                   {t("landing.hero.ctaSecondary")}
@@ -122,9 +121,6 @@ function Landing() {
           ))}
         </div>
       </section>
-
-      {/* Try it yourself - interactive */}
-      <TryItYourselfMini />
 
       {/* Crops */}
       <section className="border-y border-border bg-muted/40">
