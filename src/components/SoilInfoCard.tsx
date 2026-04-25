@@ -5,15 +5,21 @@
 import { useMemo } from "react";
 import { Mountain, FlaskConical, Sprout, Droplets, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   soilType?: string | null;
+  soilTypeBg?: string | null;
+  soilFcPct?: number | null;
+  soilWpPct?: number | null;
+  soilAwcPct?: number | null;
   soilPh?: number | null;
   soilOrganicCarbon?: number | null; // g/kg (SoilGrids SOC)
   /** True while we're (re-)enriching this parcel from ISRIC. */
   loading?: boolean;
   /** Optional error message — when the API call failed. */
   error?: string | null;
+  onRetry?: () => void;
 }
 
 function phLabel(ph: number) {
@@ -39,8 +45,9 @@ function retentionLabel(soilType: string | null | undefined): string {
   return "Оптимално задържане на вода";
 }
 
-export function SoilInfoCard({ soilType, soilPh, soilOrganicCarbon, loading, error }: Props) {
-  const retention = useMemo(() => retentionLabel(soilType), [soilType]);
+export function SoilInfoCard({ soilType, soilTypeBg, soilFcPct, soilWpPct, soilAwcPct, soilPh, soilOrganicCarbon, loading, error, onRetry }: Props) {
+  const displayType = soilTypeBg || (soilType && soilType !== "Неизвестна" ? soilType : null);
+  const retention = useMemo(() => retentionLabel(displayType), [displayType]);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
@@ -57,25 +64,38 @@ export function SoilInfoCard({ soilType, soilPh, soilOrganicCarbon, loading, err
       {loading ? (
         <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Анализираме почвата за този парцел…
+          ⏳ Зареждане на почвени данни...
         </div>
       ) : error ? (
-        <p className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3 text-center text-xs text-muted-foreground">
-          {error}
-        </p>
-      ) : !soilType && soilPh == null && soilOrganicCarbon == null ? (
-        <p className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3 text-center text-xs text-muted-foreground">
-          Почвените данни временно недостъпни.
-        </p>
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3 text-center text-xs text-muted-foreground">
+          <p>{error}</p>
+          {onRetry && <Button type="button" size="sm" variant="outline" onClick={onRetry}>Опитай отново</Button>}
+        </div>
+      ) : !displayType && soilPh == null && soilOrganicCarbon == null ? (
+        <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3 text-center text-xs text-muted-foreground">
+          <p>⏳ Зареждане на почвени данни...</p>
+          {onRetry && <Button type="button" size="sm" variant="outline" onClick={onRetry}>Опитай отново</Button>}
+        </div>
       ) : (
         <ul className="space-y-2.5 text-sm">
           <li className="flex items-start gap-2">
             <span className="mt-0.5 text-base">🪨</span>
             <div className="flex-1">
               <div className="text-xs text-muted-foreground">Тип почва</div>
-              <div className="font-semibold">{soilType ?? "—"}</div>
+              <div className="font-semibold">{displayType}</div>
             </div>
           </li>
+          {(soilFcPct != null || soilWpPct != null || soilAwcPct != null) && (
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5 text-base">💦</span>
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground">Воден капацитет</div>
+                <div className="font-medium">
+                  FC {soilFcPct?.toFixed(1) ?? "—"}% · WP {soilWpPct?.toFixed(1) ?? "—"}% · AWC {soilAwcPct?.toFixed(1) ?? "—"}%
+                </div>
+              </div>
+            </li>
+          )}
           {soilPh != null && (
             <li className="flex items-start gap-2">
               <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />

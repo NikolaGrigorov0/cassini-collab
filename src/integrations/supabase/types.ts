@@ -322,14 +322,19 @@ export type Database = {
           name: string
           pump_flow_m3h: number | null
           slope_deg: number | null
+          soil_awc_pct: number | null
           soil_clay_pct: number | null
           soil_data_raw: Json | null
           soil_enriched_at: string | null
+          soil_fc_pct: number | null
           soil_organic_carbon: number | null
           soil_ph: number | null
           soil_sand_pct: number | null
           soil_silt_pct: number | null
           soil_type: string | null
+          soil_type_bg: string | null
+          soil_type_wrb: string | null
+          soil_wp_pct: number | null
           user_id: string
         }
         Insert: {
@@ -345,14 +350,19 @@ export type Database = {
           name: string
           pump_flow_m3h?: number | null
           slope_deg?: number | null
+          soil_awc_pct?: number | null
           soil_clay_pct?: number | null
           soil_data_raw?: Json | null
           soil_enriched_at?: string | null
+          soil_fc_pct?: number | null
           soil_organic_carbon?: number | null
           soil_ph?: number | null
           soil_sand_pct?: number | null
           soil_silt_pct?: number | null
           soil_type?: string | null
+          soil_type_bg?: string | null
+          soil_type_wrb?: string | null
+          soil_wp_pct?: number | null
           user_id: string
         }
         Update: {
@@ -368,14 +378,19 @@ export type Database = {
           name?: string
           pump_flow_m3h?: number | null
           slope_deg?: number | null
+          soil_awc_pct?: number | null
           soil_clay_pct?: number | null
           soil_data_raw?: Json | null
           soil_enriched_at?: string | null
+          soil_fc_pct?: number | null
           soil_organic_carbon?: number | null
           soil_ph?: number | null
           soil_sand_pct?: number | null
           soil_silt_pct?: number | null
           soil_type?: string | null
+          soil_type_bg?: string | null
+          soil_type_wrb?: string | null
+          soil_wp_pct?: number | null
           user_id?: string
         }
         Relationships: []

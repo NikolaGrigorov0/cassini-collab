@@ -19,6 +19,11 @@ export interface MockParcel {
   forecast: { day: string; dose: number; rain: boolean }[];
   pump_flow_m3h?: number | null;
   soil_type?: string | null;
+  soil_type_wrb?: string | null;
+  soil_type_bg?: string | null;
+  soil_fc_pct?: number | null;
+  soil_wp_pct?: number | null;
+  soil_awc_pct?: number | null;
   soil_ph?: number | null;
   soil_organic_carbon?: number | null;
   soil_clay_pct?: number | null;

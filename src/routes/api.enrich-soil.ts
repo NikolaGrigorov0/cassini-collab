@@ -64,6 +64,33 @@ function classifySoil(clay: number | null, sand: number | null, silt: number | n
   return "Средна (loam)";
 }
 
+function fallbackSoilByBulgarianRegion(lat: number, lon: number) {
+  if (lat >= 43.3 && lon >= 26.0 && lon <= 28.7) return { wrb: "Chernozems", bg: "Черноземи" };
+  if (lat >= 41.8 && lat <= 42.7 && lon >= 24.0 && lon <= 26.8) return { wrb: "Vertisols / Fluvisols", bg: "Смолници и алувиални почви" };
+  if (lat >= 42.7 && lat <= 43.6 && lon >= 23.0 && lon <= 26.5) return { wrb: "Luvisols", bg: "Канелени горски почви" };
+  if (lon >= 27.3 && lat >= 41.8 && lat <= 43.8) return { wrb: "Cambisols / Luvisols", bg: "Канелени и сиво-кафяви почви" };
+  return { wrb: "Loam estimate", bg: "Средна почва за района" };
+}
+
+function bgFromTextureType(soilType: string, lat: number, lon: number) {
+  if (!soilType || soilType === "Неизвестна") return fallbackSoilByBulgarianRegion(lat, lon).bg;
+  if (soilType.startsWith("Смесена")) return `Смесена почва: ${soilType.replace("Смесена: ", "")}`;
+  return `${soilType} почва`;
+}
+
+function computeWaterPct(sandPct: number | null, clayPct: number | null) {
+  if (sandPct == null || clayPct == null) return { fc: null, wp: null, awc: null };
+  const om = 2;
+  const fc = Math.max(0, 0.2576 - 0.002 * sandPct + 0.0036 * clayPct + 0.0299 * om) * 100;
+  const wp = Math.max(0, 0.026 + 0.005 * clayPct + 0.0158 * om) * 100;
+  const awc = Math.max(0, fc - wp);
+  return {
+    fc: Number(fc.toFixed(2)),
+    wp: Number(wp.toFixed(2)),
+    awc: Number(awc.toFixed(2)),
+  };
+}
+
 function bboxOf(geom: GeoJSON.Polygon): [number, number, number, number] {
   const ring = geom.coordinates[0] as [number, number][];
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -207,15 +234,22 @@ export const Route = createFileRoute("/api/enrich-soil")({
           const soc = avg(soilSamples.map((s) => s.soc));
 
           const awc_mm = computeAWCmm(sand, clay);
+          const fallback = fallbackSoilByBulgarianRegion(lat, lon);
+          const waterPct = computeWaterPct(sand, clay);
 
           const update = {
             soil_sand_pct: sand,
             soil_clay_pct: clay,
             soil_silt_pct: silt,
             soil_type,
+            soil_type_wrb: soil_type === "Неизвестна" ? fallback.wrb : soil_type,
+            soil_type_bg: bgFromTextureType(soil_type, lat, lon),
+            soil_fc_pct: waterPct.fc,
+            soil_wp_pct: waterPct.wp,
+            soil_awc_pct: waterPct.awc,
             soil_ph: ph == null ? null : Number(ph.toFixed(2)),
             soil_organic_carbon: soc == null ? null : Number(soc.toFixed(2)),
-            soil_data_raw: { samples: samplePts.map((p, i) => ({ ...p, ...soilSamples[i], type: types[i] })) },
+            soil_data_raw: { samples: samplePts.map((p, i) => ({ ...p, ...soilSamples[i], type: types[i] })), fallback_region: fallback },
             awc_mm,
             slope_deg: topo.slope,
             aspect_deg: topo.aspect,
