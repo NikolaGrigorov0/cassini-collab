@@ -189,6 +189,14 @@ export function WateringLog({
       toast.success("Записано");
       setOpen(false);
       setTodaysEvent((inserted as unknown as IrrigationRow) ?? null);
+      onIrrigationChange?.({
+        ndmi: correction.correctedNDMI,
+        dose_mm: correction.newDose,
+        status: correction.newStatus,
+        reason: correction.newReason,
+        forecastTransform: (prev) =>
+          recomputeForecast(prev, currentNDMI, correction.correctedNDMI, recommendedDoseMM),
+      });
       void loadHistory();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Грешка при запис");
@@ -228,6 +236,15 @@ export function WateringLog({
       toast.success("↩ Напояването е отменено успешно", { duration: 3000 });
       setTodaysEvent(null);
       setConfirmUndo(false);
+      onIrrigationChange?.({
+        ndmi: restored.restoredNDMI,
+        dose_mm: restored.restoredDose,
+        status: restored.restoredStatus,
+        reason: restored.restoredReason,
+        // Reverse: rebuild forecast from the *restored* (pre-irrigation) NDMI.
+        forecastTransform: (prev) =>
+          recomputeForecast(prev, restored.restoredNDMI, restored.restoredNDMI, restored.restoredDose),
+      });
       void loadHistory();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Грешка при отмяна");
