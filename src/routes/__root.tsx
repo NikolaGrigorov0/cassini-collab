@@ -4,6 +4,11 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?url";
 
+// Initialize i18n (registers translations + sets initial language).
+import "@/i18n";
+import { useEffect } from "react";
+import { autoDetectByGeolocation } from "@/i18n";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -70,5 +75,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  // Fire-and-forget IP geolocation in the background. It only switches the
+  // language if the user has not made a manual choice.
+  useEffect(() => {
+    void autoDetectByGeolocation();
+  }, []);
   return <Outlet />;
 }
