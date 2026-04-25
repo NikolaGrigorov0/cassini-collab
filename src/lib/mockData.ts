@@ -18,6 +18,12 @@ export interface MockParcel {
   recorded_at: string;
   forecast: { day: string; dose: number; rain: boolean }[];
   pump_flow_m3h?: number | null;
+  soil_type?: string | null;
+  soil_ph?: number | null;
+  soil_organic_carbon?: number | null;
+  soil_clay_pct?: number | null;
+  soil_sand_pct?: number | null;
+  soil_silt_pct?: number | null;
 }
 
 const mkPoly = (cx: number, cy: number, sx = 0.008, sy = 0.006): GeoJSON.Polygon => ({
