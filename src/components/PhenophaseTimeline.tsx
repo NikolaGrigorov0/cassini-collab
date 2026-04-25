@@ -53,10 +53,6 @@ export function PhenophaseTimeline({ parcelId, cropType, sowingDate, ndvi, onEdi
   const reload = async () => {
     setLoading(true);
     setError(null);
-    // Reset phases to avoid showing the previous crop's timeline while the
-    // new crop loads (race when switching parcels with different crops).
-    setPhases(null);
-    setGrowth(null);
     try {
       const all = await fetchPhenophases();
       const cropPhases = getPhasesForCrop(all, cropType);
@@ -75,6 +71,13 @@ export function PhenophaseTimeline({ parcelId, cropType, sowingDate, ndvi, onEdi
       setLoading(false);
     }
   };
+
+  // Clear stale phases immediately when the crop changes, so the previous
+  // crop's timeline never flashes while new data is loading.
+  useEffect(() => {
+    setPhases(null);
+    setGrowth(null);
+  }, [cropType, parcelId]);
 
   useEffect(() => {
     void reload();
