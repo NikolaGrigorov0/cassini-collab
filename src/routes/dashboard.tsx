@@ -11,6 +11,7 @@ import { WaterDeficitModal } from "@/components/WaterDeficitModal";
 import { DeficitScheduleView } from "@/components/DeficitScheduleView";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { EditModeBar } from "@/components/EditModeBar";
+import { EditParcelModal } from "@/components/EditParcelModal";
 import { useRealtimeStatus } from "@/hooks/useRealtimeStatus";
 import type { DeficitPlan } from "@/lib/deficitPlanner";
 import { CROP_ICONS, CROP_LABELS, STATUS_COLORS, type MockParcel, type CropType, type GrowthPhase, type IrrigationStatus } from "@/lib/mockData";
@@ -69,6 +70,7 @@ function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [soilLoadingId, setSoilLoadingId] = useState<string | null>(null);
   const [soilErrorByParcel, setSoilErrorByParcel] = useState<Record<string, string>>({});
+  const [editDetailsId, setEditDetailsId] = useState<string | null>(null);
 
   // Deficit mode
   const [deficitModalOpen, setDeficitModalOpen] = useState(false);
@@ -681,6 +683,7 @@ function Dashboard() {
               soilError={soilErrorByParcel[selected.id] ?? null}
               isEditing={false}
               editAreaHa={draftAreaHa}
+              onEditDetails={() => setEditDetailsId(selected.id)}
               onStartEdit={() => {
                 setEditingId(selected.id);
                 setDraftGeometry(selected.geometry);
@@ -751,6 +754,26 @@ function Dashboard() {
         onOpenChange={setDeficitModalOpen}
         parcels={parcels}
         onGenerate={handleGenerateDeficit}
+      />
+
+      <EditParcelModal
+        open={!!editDetailsId}
+        parcel={parcels.find((p) => p.id === editDetailsId) ?? null}
+        onOpenChange={(o) => { if (!o) setEditDetailsId(null); }}
+        onSaved={(next) => {
+          if (!editDetailsId) return;
+          setParcels((prev) => prev.map((p) => (p.id === editDetailsId ? { ...p, ...next } : p)));
+        }}
+        onRedrawBoundary={() => {
+          if (!editDetailsId) return;
+          const p = parcels.find((x) => x.id === editDetailsId);
+          if (!p) return;
+          setSelectedId(p.id);
+          setEditingId(p.id);
+          setDraftGeometry(p.geometry);
+          setDraftAreaHa(p.area_hectares);
+          setEditDetailsId(null);
+        }}
       />
     </div>
   );
