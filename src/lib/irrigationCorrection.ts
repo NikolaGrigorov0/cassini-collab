@@ -136,3 +136,38 @@ export function reverseIrrigation(
     restoredReason: "Напояването е отменено. Върнати са оригиналните стойности.",
   };
 }
+
+/** Recompute a 7-day forecast after an irrigation event.
+ *  We model soil drying: NDMI lift decays linearly back to its previous
+ *  trajectory by day ~5. Dose required per day is proportional to the
+ *  depletion below the green threshold (NDMI 0.20). */
+export function recomputeForecast(
+  forecast: { date: string; dose_mm: number; status: RecStatus }[],
+  ndmiBefore: number,
+  ndmiAfter: number,
+  baselineDoseMM: number,
+): { date: string; dose_mm: number; status: RecStatus }[] {
+  const lift = Math.max(0, ndmiAfter - ndmiBefore);
+  const decayDays = 5;
+  const base = baselineDoseMM > 0 ? baselineDoseMM : 15;
+  return forecast.map((d, i) => {
+    // Remaining lift fraction at day i (1 today → 0 by day decayDays).
+    const remain = Math.max(0, 1 - i / decayDays);
+    const ndmiOnDay = ndmiBefore + lift * remain;
+    let status: RecStatus;
+    let dose: number;
+    if (ndmiOnDay > 0.2) {
+      status = "green";
+      dose = 0;
+    } else if (ndmiOnDay > 0) {
+      status = "yellow";
+      // scale by how far below 0.20 we are
+      const factor = (0.2 - ndmiOnDay) / 0.2; // 0..1
+      dose = Math.round(base * 0.7 * factor * 10) / 10;
+    } else {
+      status = "red";
+      dose = Math.round(base * 1.0 * 10) / 10;
+    }
+    return { date: d.date, dose_mm: dose, status };
+  });
+}
