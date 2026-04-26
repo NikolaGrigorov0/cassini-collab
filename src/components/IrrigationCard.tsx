@@ -310,12 +310,17 @@ export function IrrigationCard({
             <div>
               <b className="text-foreground">Защо:</b>{" "}
               {rainToday > 0
-                ? `ETc ${etcToday.toFixed(1)}mm − Дъжд ${rainToday.toFixed(1)}mm = Нужда ${doseToday.toFixed(1)}mm`
-                : `ETc ${etcToday.toFixed(1)}mm · Без валежи`}
+                ? `Дневна нужда ETc ${etcToday.toFixed(1)}mm − Дъжд ${rainToday.toFixed(1)}mm`
+                : `Дневна нужда ETc ${etcToday.toFixed(1)}mm · Без валежи`}
             </div>
-            <div>
-              NDMI: {ndmi.toFixed(2)} · {Math.round(moisturePct)}% ППВ
-            </div>
+            {doseToday > Math.max(0, etcToday - rainToday) + 0.5 && (
+              <div>
+                <b className="text-foreground">Защо повече от ETc:</b>{" "}
+                Почвата е суха ({Math.round(moisturePct)}% ППВ, NDMI {ndmi.toFixed(2)}) —
+                препоръката добавя вода за да покрие натрупания дефицит, не само днешната нужда.
+              </div>
+            )}
+            <div>NDMI: {ndmi.toFixed(2)} · {Math.round(moisturePct)}% ППВ</div>
           </div>
         )}
       </div>
@@ -360,9 +365,9 @@ export function IrrigationCard({
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>
                   <th className="px-2 py-1.5 text-left font-semibold">Ден</th>
-                  <th className="px-2 py-1.5 text-right font-semibold">Нужда</th>
+                  <th className="px-2 py-1.5 text-right font-semibold" title="Дневна изпарителна нужда (ETc)">Нужда</th>
                   <th className="px-2 py-1.5 text-right font-semibold">Дъжд</th>
-                  <th className="px-2 py-1.5 text-right font-semibold">Полей</th>
+                  <th className="px-2 py-1.5 text-right font-semibold" title="Препоръчана доза (включва натрупан дефицит)">Полей</th>
                 </tr>
               </thead>
               <tbody>
@@ -391,6 +396,9 @@ export function IrrigationCard({
             <div className="border-t border-border bg-primary/5 px-2 py-2 text-xs">
               Общо за седмицата: <b>{weekTotalM3.toFixed(1)} м³</b> ({weekTotalM3PerDka.toFixed(1)} м³/дка)
               {weekPumpHrs !== null && <> · {formatHours(weekPumpHrs)} помпа</>}
+            </div>
+            <div className="border-t border-border bg-muted/20 px-2 py-2 text-[11px] text-muted-foreground">
+              ℹ️ <b>Нужда</b> = дневно изпарение (ETc). <b>Полей</b> = препоръчана доза, която може да е по-голяма ако почвата вече е изсъхнала и трябва да се навакса дефицит.
             </div>
           </div>
         )}
