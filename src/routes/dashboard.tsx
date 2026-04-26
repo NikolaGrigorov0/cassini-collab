@@ -671,7 +671,7 @@ function Dashboard() {
                   const deficitBadge = da
                     ? da.priority === "critical"
                       ? { text: t("dashboard.sidebar.fullDose"), cls: "bg-emerald-100 text-emerald-700" }
-                      : da.deficitDose === 0
+                      : da.deficitM3Total === 0
                       ? { text: t("dashboard.sidebar.skipped"), cls: "bg-muted text-muted-foreground" }
                       : { text: t("dashboard.sidebar.reduced"), cls: "bg-amber-100 text-amber-800" }
                     : null;
