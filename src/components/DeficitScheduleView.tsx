@@ -153,9 +153,9 @@ export function DeficitScheduleView({ plan, parcels, availablePct, dateFrom, dat
                   })}
                   <tr className="border-t-2 border-border bg-muted/30">
                     <td className="sticky left-0 z-10 bg-muted/30 p-3 font-semibold">{t("deficit.dayTotal")}</td>
-                    {dayTotals.map((t, i) => (
+                    {dayTotals.map((tot, i) => (
                       <td key={i} className="p-2 text-center text-xs font-bold">
-                        {fmtM3(t)} м³
+                        {fmtM3(tot)} {t("units.m3")}
                       </td>
                     ))}
                   </tr>
