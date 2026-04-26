@@ -152,7 +152,7 @@ export function calculateDeficitSchedule(
   // Allocate per-parcel volume (m³) over the whole period.
   type Working = { item: typeof items[number]; m3: number };
   let remaining = totalAvailableM3;
-  const working: Working[] = items.map((it) => ({ item: it, dose: 0 }));
+  const working: Working[] = items.map((it) => ({ item: it, m3: 0 }));
 
   // Critical first — full dose if possible
   for (const w of working) {
