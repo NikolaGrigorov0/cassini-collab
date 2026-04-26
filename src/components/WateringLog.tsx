@@ -12,7 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import {
-  calculateLitersPerDecare,
   formatNextCheck,
   nextCheckDate,
   recalculateAfterIrrigation,
