@@ -392,7 +392,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           {onStartEdit && !isEditing && (
             <Button onClick={onStartEdit} className="w-full" variant="outline">
               <Pencil className="mr-2 h-4 w-4" />
-              ✏️ Редактирай форма
+              Редактирай форма
             </Button>
           )}
           <ParcelHistoryDialog parcelId={parcel.id} parcelName={parcel.name} />
