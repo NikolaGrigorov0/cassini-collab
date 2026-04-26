@@ -225,7 +225,7 @@ export function IrrigationCard({
           ) : (
             <CloudOff className="h-3.5 w-3.5 shrink-0" />
           )}
-          <span className="truncate">
+          <span className="whitespace-normal leading-snug">
             {source === "sentinel-2"
               ? `Sentinel-2 оптичен · точност ${confidence ?? 90}%`
               : source === "sentinel-1-sar"
