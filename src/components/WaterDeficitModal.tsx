@@ -8,6 +8,7 @@
 //   • Period offers 3/7/14-day quick-pick chips alongside the date inputs.
 //   • All preview numbers are m³ — never raw mm.
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,6 @@ import { CROP_ICONS, CROP_LABELS } from "@/lib/mockData";
 import {
   calculateDeficitSchedule,
   PRIORITY_EMOJI,
-  PRIORITY_LABEL,
   type DeficitPlan,
 } from "@/lib/deficitPlanner";
 
@@ -49,17 +49,22 @@ function fmt(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function fmtM3(v: number) {
-  return v >= 1000 ? `${(v / 1000).toFixed(1)} хил. м³` : `${Math.round(v * 10) / 10} м³`;
-}
-
-const QUICK_PERIODS = [
-  { days: 3, label: "3 дни" },
-  { days: 7, label: "7 дни" },
-  { days: 14, label: "14 дни" },
-];
-
 export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: Props) {
+  const { t } = useTranslation();
+  const fmtM3 = (v: number) =>
+    v >= 1000
+      ? t("deficitModal.thousandM3", { n: (v / 1000).toFixed(1) })
+      : t("deficitModal.m3", { n: Math.round(v * 10) / 10 });
+  const QUICK_PERIODS = [
+    { days: 3, label: t("deficitModal.days3") },
+    { days: 7, label: t("deficitModal.days7") },
+    { days: 14, label: t("deficitModal.days14") },
+  ];
+  const PRIORITY_LABEL_T: Record<string, string> = {
+    critical: t("deficit.priorityCritical"),
+    important: t("deficit.priorityImportant"),
+    tolerable: t("deficit.priorityTolerable"),
+  };
   // Period
   const today = useMemo(() => fmt(new Date()), []);
   const weekLater = useMemo(() => fmt(new Date(Date.now() + 6 * 86400000)), []);
@@ -118,10 +123,10 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
   }, [selectedParcels, availableM3, from, to]);
 
   const severity = availablePct >= 75
-    ? { label: "Лек дефицит", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" }
+    ? { label: t("deficitModal.deficitMild"), color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" }
     : availablePct >= 40
-    ? { label: "Умерен дефицит", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" }
-    : { label: "Сериозен дефицит", color: "text-red-600", bg: "bg-red-50 border-red-200" };
+    ? { label: t("deficitModal.deficitMedium"), color: "text-amber-600", bg: "bg-amber-50 border-amber-200" }
+    : { label: t("deficitModal.deficitSevere"), color: "text-red-600", bg: "bg-red-50 border-red-200" };
 
   const toggle = (id: string) =>
     setSelectedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
@@ -143,11 +148,10 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Zap className="h-5 w-5 text-amber-500" />
-            Режим на воден дефицит
+            {t("deficitModal.modeTitle")}
           </DialogTitle>
           <DialogDescription>
-            Въведи колко вода имаш на разположение и системата ще раздели наличните
-            кубици между парцелите по приоритет на културата.
+            {t("deficitModal.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,7 +160,7 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
           <section>
             <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">1</span>
-              За какъв период?
+              {t("deficitModal.step1")}
             </label>
             <div className="mb-2 flex flex-wrap gap-1.5">
               {QUICK_PERIODS.map((q) => (
@@ -173,13 +177,14 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
                   {q.label}
                 </button>
               ))}
-              <span className="ml-auto self-center text-[11px] text-muted-foreground">
-                Общо <b>{periodDays}</b> дни
-              </span>
+              <span
+                className="ml-auto self-center text-[11px] text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: t("deficitModal.totalDays", { n: periodDays }) }}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="mb-1 text-xs text-muted-foreground">От</div>
+                <div className="mb-1 text-xs text-muted-foreground">{t("deficitModal.from")}</div>
                 <input
                   type="date"
                   value={from}
@@ -188,7 +193,7 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
                 />
               </div>
               <div>
-                <div className="mb-1 text-xs text-muted-foreground">До</div>
+                <div className="mb-1 text-xs text-muted-foreground">{t("deficitModal.to")}</div>
                 <input
                   type="date"
                   value={to}
@@ -204,14 +209,14 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
             <div className="mb-2 flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">2</span>
-                Кои парцели засяга?
+                {t("deficitModal.step2")}
               </label>
               <button
                 type="button"
                 onClick={selectAll}
                 className="text-xs font-medium text-primary hover:underline"
               >
-                Избери всички
+                {t("deficitModal.selectAll")}
               </button>
             </div>
             <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-md border border-border p-2">
@@ -232,7 +237,7 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
                     <span>{CROP_ICONS[p.crop_type]}</span>
                     <span className="font-medium">{p.name}</span>
                     <span className="text-muted-foreground">
-                      · {CROP_LABELS[p.crop_type]} · {p.area_hectares} ха
+                      · {t(`crops.${p.crop_type}`, { defaultValue: CROP_LABELS[p.crop_type] })} · {p.area_hectares} {t("units.ha")}
                     </span>
                   </label>
                 </li>
@@ -244,12 +249,12 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
           <section>
             <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">3</span>
-              Колко вода имаш на разположение?
+              {t("deficitModal.step3")}
             </label>
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-end gap-3">
                 <div className="flex-1">
-                  <div className="mb-1 text-xs text-muted-foreground">м³ общо</div>
+                  <div className="mb-1 text-xs text-muted-foreground">{t("deficitModal.m3Total")}</div>
                   <Input
                     type="number"
                     inputMode="decimal"
@@ -261,12 +266,12 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
                       const v = Number(e.target.value);
                       setAvailableM3(Number.isFinite(v) && v >= 0 ? v : 0);
                     }}
-                    placeholder="Напр. 5000"
+                    placeholder={t("deficitModal.placeholder")}
                     className="text-lg font-bold"
                   />
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-muted-foreground">от нужни</div>
+                  <div className="text-xs text-muted-foreground">{t("deficitModal.ofNeeded")}</div>
                   <div className="text-lg font-bold text-foreground">{fmtM3(totalNeedM3)}</div>
                 </div>
               </div>
@@ -277,7 +282,7 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
                     <div className={`text-xs font-medium ${severity.color}`}>{severity.label}</div>
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
-                    Липсват{" "}
+                    {t("deficitModal.missing")}{" "}
                     <b className="text-red-600">
                       {fmtM3(Math.max(0, totalNeedM3 - availableM3))}
                     </b>
@@ -287,8 +292,7 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
               <div className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
                 <Info className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>
-                  Включи всичко, което може да полееш — резервоар, помпа, кладенец.
-                  Системата ще раздели по приоритет: критични култури → важни → толерантни.
+                  {t("deficitModal.infoLine")}
                 </span>
               </div>
             </div>
@@ -297,18 +301,18 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
           {/* Live preview */}
           {plan && (
             <section className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-              <div className="text-sm font-semibold text-amber-900">Предварителен план</div>
+              <div className="text-sm font-semibold text-amber-900">{t("deficitModal.preview")}</div>
               <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="rounded-md bg-card/60 p-2">
-                  <div className="text-muted-foreground">Нужно</div>
+                  <div className="text-muted-foreground">{t("deficitModal.needCol")}</div>
                   <div className="text-sm font-bold">{fmtM3(plan.totalNeededM3)}</div>
                 </div>
                 <div className="rounded-md bg-card/60 p-2">
-                  <div className="text-muted-foreground">Налично</div>
+                  <div className="text-muted-foreground">{t("deficitModal.availCol")}</div>
                   <div className="text-sm font-bold text-amber-700">{fmtM3(plan.totalAvailableM3)}</div>
                 </div>
                 <div className="rounded-md bg-card/60 p-2">
-                  <div className="text-muted-foreground">Дефицит</div>
+                  <div className="text-muted-foreground">{t("deficitModal.deficitCol")}</div>
                   <div className="text-sm font-bold text-red-600">
                     {fmtM3(Math.max(0, plan.totalNeededM3 - plan.totalAvailableM3))}
                   </div>
@@ -317,12 +321,12 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
               <ul className="mt-3 space-y-1.5">
                 {plan.allocations.map((a) => {
                   const badgeText = a.priority === "critical"
-                    ? "Пълна доза"
+                    ? t("deficitModal.fullDose")
                     : a.deficitM3 === 0
-                    ? "Пропуска се"
+                    ? t("deficitModal.skipped")
                     : a.priority === "important"
-                    ? `Намалена с ${a.reductionPct}%`
-                    : "Минимална доза";
+                    ? t("deficitModal.reduced", { pct: a.reductionPct })
+                    : t("deficitModal.minimal");
                   const badgeClass = a.priority === "critical"
                     ? "bg-red-100 text-red-700"
                     : a.deficitM3 === 0
@@ -339,7 +343,7 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
                         {PRIORITY_EMOJI[a.priority]}{" "}
                         <b>{a.parcel.name}</b>{" "}
                         <span className="text-xs text-muted-foreground">
-                          · {PRIORITY_LABEL[a.priority]}
+                          · {PRIORITY_LABEL_T[a.priority]}
                         </span>
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
@@ -363,7 +367,7 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
 
         <div className="flex justify-end gap-2 border-t border-border pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Отказ
+            {t("deficitModal.cancel")}
           </Button>
           <Button
             disabled={!plan || selectedIds.length === 0 || availableM3 <= 0}
@@ -379,7 +383,7 @@ export function WaterDeficitModal({ open, onOpenChange, parcels, onGenerate }: P
             }}
             className="bg-amber-500 text-white hover:bg-amber-600"
           >
-            Генерирай график
+            {t("deficitModal.generate")}
           </Button>
         </div>
       </DialogContent>
