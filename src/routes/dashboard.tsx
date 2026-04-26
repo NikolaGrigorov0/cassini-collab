@@ -684,8 +684,9 @@ function Dashboard() {
               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("dashboard.sidebar.stats")}</div>
               <ul className="space-y-1.5 text-sm">
                 <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.totalParcels")}</span><span className="font-semibold">{parcels.length}</span></li>
-                <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.savedWater")}</span><span className="font-semibold text-primary">~{parcels.length * 800} {t("units.liters")}</span></li>
-                <li className="flex justify-between"><span className="text-muted-foreground">{t("dashboard.sidebar.co2")}</span><span className="font-semibold text-primary">~{(parcels.length * 0.3).toFixed(1)} kg</span></li>
+                {/* Hidden — placeholder values (parcels × 800 л / × 0.3 kg)
+                    were not based on real irrigation data. Re-enable once
+                    computed from irrigation_events. */}
               </ul>
             </div>
           </div>
