@@ -220,6 +220,62 @@ function Dashboard() {
     return () => { cancelled = true; };
   }, [user]);
 
+  // Load "watered today" map and keep it in sync via realtime so the sidebar
+  // immediately replaces "СПЕШНО НАПОЯВАНЕ" with "✓ Полято днес" the moment
+  // the user logs a manual irrigation in the right-hand panel.
+  useEffect(() => {
+    if (!user || parcels.length === 0) return;
+    const ids = parcels.map((p) => p.id);
+    let cancelled = false;
+
+    const loadWatered = async () => {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("irrigation_events")
+        .select("parcel_id, amount_mm, created_at")
+        .in("parcel_id", ids)
+        .eq("undone", false)
+        .eq("date", todayStr)
+        .neq("method", "rain")
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      const map: Record<string, { amount_mm: number; created_at: string }> = {};
+      for (const row of data ?? []) {
+        // Keep the most recent (rows are already sorted desc).
+        if (!map[row.parcel_id]) {
+          map[row.parcel_id] = { amount_mm: Number(row.amount_mm), created_at: row.created_at };
+        }
+      }
+      setWateredToday(map);
+    };
+
+    void loadWatered();
+
+    const ch = supabase
+      .channel(`watered-today-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "irrigation_events" },
+        () => { void loadWatered(); },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(ch);
+    };
+  }, [user, parcels]);
+
+  // Reset at midnight (local) so the badge clears the next day even if the tab stays open.
+  useEffect(() => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 5, 0);
+    const ms = midnight.getTime() - now.getTime();
+    const tid = window.setTimeout(() => setWateredToday({}), ms);
+    return () => window.clearTimeout(tid);
+  }, [wateredToday]);
+
   // Merge any freshly-fetched live NDMI back into the parcel list so
   // the map's water batteries reflect the latest per-parcel value.
   const parcelsWithLive = useMemo(() => {
