@@ -302,8 +302,11 @@ export function WateringLog({
             </span>
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Доза: {(todaysEvent.dose_mm ?? todaysEvent.amount_mm).toFixed(0)}мм ·{" "}
-            {calculateLitersPerDecare(todaysEvent.dose_mm ?? todaysEvent.amount_mm).toLocaleString("bg-BG")} литра на декар
+            {(() => {
+              const mm = todaysEvent.dose_mm ?? todaysEvent.amount_mm;
+              const m3 = mm * areaDka;
+              return `Доза: ${fmtM3(m3)} (${mm.toFixed(1)} м³/дка)`;
+            })()}
           </div>
           {lastDynamicsReason && (
             <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
@@ -362,7 +365,7 @@ export function WateringLog({
         /* INLINE FORM */
         <div className="rounded-xl border-2 border-blue-300 bg-blue-50/60 p-4 dark:border-blue-800 dark:bg-blue-950/30 animate-in fade-in slide-in-from-top-1">
           <label className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-            Колко мм напои?
+            Колко м³ напои? (общо за парцела)
           </label>
           <div className="mt-2 flex items-center gap-2">
             <Button
@@ -370,8 +373,8 @@ export function WateringLog({
               variant="outline"
               size="icon"
               className="shrink-0"
-              onClick={() => adjust(-5)}
-              disabled={saving || dose <= MIN_MM}
+              onClick={() => adjust(-stepM3)}
+              disabled={saving || doseM3 <= minM3}
             >
               <Minus className="h-4 w-4" />
             </Button>
@@ -379,33 +382,34 @@ export function WateringLog({
               type="number"
               inputMode="decimal"
               step="1"
-              min={MIN_MM}
-              max={MAX_MM}
-              value={dose}
+              min={minM3}
+              max={maxM3}
+              value={doseM3}
               onChange={(e) => {
                 const v = Number(e.target.value);
-                if (Number.isFinite(v)) setDose(Math.min(MAX_MM, Math.max(MIN_MM, v)));
+                if (Number.isFinite(v)) setDoseM3(Math.min(maxM3, Math.max(minM3, v)));
               }}
               className="text-center text-lg font-bold"
             />
-            <span className="font-mono text-sm text-muted-foreground">мм</span>
+            <span className="font-mono text-sm text-muted-foreground">м³</span>
             <Button
               type="button"
               variant="outline"
               size="icon"
               className="shrink-0"
-              onClick={() => adjust(5)}
-              disabled={saving || dose >= MAX_MM}
+              onClick={() => adjust(stepM3)}
+              disabled={saving || doseM3 >= maxM3}
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {dose}mm ≈{" "}
+            {fmtM3(doseM3)} ≈{" "}
             <span className="font-semibold text-foreground">
-              {calculateLitersPerDecare(dose).toLocaleString("bg-BG")} литра
-            </span>{" "}
-            на декар
+              {dose.toFixed(1)} м³/дка
+            </span>
+            {" · "}
+            {dose.toFixed(1)} мм дълбочина
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Button
