@@ -283,19 +283,6 @@ export function IrrigationCard({
               </span>
               <span className="text-xl font-medium text-muted-foreground">м³</span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded-md bg-muted/50 px-2.5 py-1.5">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">m³/дка</div>
-                <div className="font-mono font-semibold">{m3PerDka.toFixed(1)}</div>
-              </div>
-              <div className="rounded-md bg-muted/50 px-2.5 py-1.5">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">мм</div>
-                <div className="font-mono font-semibold">{doseToday.toFixed(1)}</div>
-              </div>
-            </div>
-            <div className="mt-2 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs">
-              За целия парцел: <b>{u.totalM3.toFixed(1)} м³</b> · {Math.round(u.totalLiters).toLocaleString("bg-BG")} л · {doseToday.toFixed(1)} мм
-            </div>
             {pumpFlowM3h && pumpHrs !== null ? (
               <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Gauge className="h-3.5 w-3.5" />
