@@ -93,6 +93,8 @@ export function WateringLog({
   const [todaysEvent, setTodaysEvent] = useState<IrrigationRow | null>(null);
   const [confirmUndo, setConfirmUndo] = useState(false);
   const [undoing, setUndoing] = useState(false);
+  const [lastDynamicsReason, setLastDynamicsReason] = useState<string | null>(null);
+  const [lastNextCheckDays, setLastNextCheckDays] = useState<number | null>(null);
 
   const loadHistory = useCallback(async () => {
     const { data, error } = await supabase
@@ -189,6 +191,8 @@ export function WateringLog({
       toast.success("Записано");
       setOpen(false);
       setTodaysEvent((inserted as unknown as IrrigationRow) ?? null);
+      setLastDynamicsReason(correction.dynamicsReason || null);
+      setLastNextCheckDays(correction.nextCheckInDays);
       onIrrigationChange?.({
         ndmi: correction.correctedNDMI,
         dose_mm: correction.newDose,
@@ -236,6 +240,8 @@ export function WateringLog({
       toast.success("↩ Напояването е отменено успешно", { duration: 3000 });
       setTodaysEvent(null);
       setConfirmUndo(false);
+      setLastDynamicsReason(null);
+      setLastNextCheckDays(null);
       onIrrigationChange?.({
         ndmi: restored.restoredNDMI,
         dose_mm: restored.restoredDose,
@@ -259,7 +265,8 @@ export function WateringLog({
     ?? currentStatus
     ?? (recommendedDoseMM <= 0 ? "green" : recommendedDoseMM < 10 ? "yellow" : "red");
   const statusToDays = { green: 5, yellow: 3, red: 1 } as const;
-  const upcomingCheck = nextCheckDate(statusToDays[effectiveStatus]);
+  const daysUntilCheck = lastNextCheckDays ?? statusToDays[effectiveStatus];
+  const upcomingCheck = nextCheckDate(daysUntilCheck);
 
   return (
     <div className="space-y-3">
