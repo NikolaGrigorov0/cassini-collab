@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Droplets, Calendar, Satellite, Share2, CloudRain, Loader2, Trash2, Gauge, Pencil, Save, Ban } from "lucide-react";
+import { X, Satellite, Share2, CloudRain, Loader2, Trash2, Pencil, Save, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import {
@@ -18,8 +18,8 @@ import type { MockParcel } from "@/lib/mockData";
 import { CROP_ICONS, CROP_LABELS, STATUS_COLORS } from "@/lib/mockData";
 import { DataQualityBanner, type DataSource } from "@/components/DataQualityBanner";
 import { ForecastChart, type ForecastDay } from "@/components/ForecastChart";
-import { WaterBattery, ndmiToMoisturePct } from "@/components/WaterBattery";
-import { convertWater, formatHours, formatPerDka, formatTotal, pumpRuntimeHours } from "@/lib/waterUnits";
+import { ndmiToMoisturePct } from "@/components/WaterBattery";
+import { convertWater } from "@/lib/waterUnits";
 import { PhenophaseTimeline } from "@/components/PhenophaseTimeline";
 import { GrowthPhaseIndicator } from "@/components/GrowthPhaseIndicator";
 import { QuickIrrigationActions } from "@/components/QuickIrrigationActions";
@@ -29,6 +29,7 @@ import { ParcelHistoryDialog } from "@/components/ParcelHistoryDialog";
 import { WeatherForecast } from "@/components/WeatherForecast";
 import { SoilInfoCard } from "@/components/SoilInfoCard";
 import { SatelliteDataSection } from "@/components/SatelliteDataSection";
+import { IrrigationCard } from "@/components/IrrigationCard";
 
 export interface LiveParcelData {
   ndmi: number;
