@@ -3,22 +3,10 @@ import { initReactI18next } from "react-i18next";
 
 import bg from "@/locales/bg.json";
 import en from "@/locales/en.json";
-import ro from "@/locales/ro.json";
-import el from "@/locales/el.json";
-import tr from "@/locales/tr.json";
-import de from "@/locales/de.json";
-import fr from "@/locales/fr.json";
-
-// RTL support (ar, he) - not implemented yet
 
 export const SUPPORTED_LANGUAGES = [
-  { code: "bg", name: "Български", flag: "🇧🇬" },
   { code: "en", name: "English", flag: "🇬🇧" },
-  { code: "ro", name: "Română", flag: "🇷🇴" },
-  { code: "el", name: "Ελληνικά", flag: "🇬🇷" },
-  { code: "tr", name: "Türkçe", flag: "🇹🇷" },
-  { code: "de", name: "Deutsch", flag: "🇩🇪" },
-  { code: "fr", name: "Français", flag: "🇫🇷" },
+  { code: "bg", name: "Български", flag: "🇧🇬" },
 ] as const;
 
 export type LangCode = (typeof SUPPORTED_LANGUAGES)[number]["code"];
@@ -28,16 +16,6 @@ const SUPPORTED_CODES: ReadonlySet<string> = new Set(SUPPORTED_LANGUAGES.map((l)
 // Map ISO country codes to our supported language codes.
 const COUNTRY_TO_LANG: Record<string, LangCode> = {
   BG: "bg",
-  RO: "ro",
-  GR: "el",
-  CY: "el",
-  TR: "tr",
-  DE: "de",
-  AT: "de",
-  CH: "de",
-  FR: "fr",
-  BE: "fr",
-  LU: "fr",
 };
 
 export const STORAGE_KEY = "preferred_language";
@@ -91,18 +69,16 @@ export function setLanguage(lang: LangCode): void {
 
 i18n.use(initReactI18next).init({
   resources: {
-    bg: { translation: bg },
     en: { translation: en },
-    ro: { translation: ro },
-    el: { translation: el },
-    tr: { translation: tr },
-    de: { translation: de },
-    fr: { translation: fr },
+    bg: { translation: bg },
   },
   lng: pickInitialLanguage(),
   fallbackLng: "en",
   interpolation: { escapeValue: false },
   returnNull: false,
+  // Strict EN fallback: if a translation is missing in the active language,
+  // fall back to EN — never show the raw key in production-quality UI.
+  returnEmptyString: false,
 });
 
 if (typeof window !== "undefined") {
