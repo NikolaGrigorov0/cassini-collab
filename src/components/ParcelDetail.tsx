@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import type { MockParcel } from "@/lib/mockData";
 import { CROP_ICONS, CROP_LABELS, STATUS_COLORS } from "@/lib/mockData";
-import { DataQualityBanner, type DataSource } from "@/components/DataQualityBanner";
+import { type DataSource } from "@/components/DataQualityBanner";
 import { ForecastChart, type ForecastDay } from "@/components/ForecastChart";
 import { ndmiToMoisturePct } from "@/components/WaterBattery";
 import { convertWater } from "@/lib/waterUnits";
@@ -277,19 +277,12 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
 
         <div className="space-y-5 p-4">
           {/* Data quality banner — live mode only */}
-          {loadingLive ? (
+          {loadingLive && (
             <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Зареждам последни спътникови данни…
             </div>
-          ) : liveData ? (
-            <DataQualityBanner
-              source={liveData.source}
-              confidence={liveData.confidence}
-              cloudCoverage={liveData.cloudCoverage}
-              lastUpdated={liveData.fetchedAt}
-            />
-          ) : null}
+          )}
 
           {/* Main irrigation recommendation — daily-first, parcel-only volumes */}
           <IrrigationCard
