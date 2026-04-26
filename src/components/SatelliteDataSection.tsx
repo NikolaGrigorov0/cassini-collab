@@ -263,7 +263,6 @@ export function SatelliteDataSection({
   const moisturePct = ndmiToPct(ndmi, fcPct, wpPct);
   const ndmiR = ndmiRating(moisturePct);
   const ndviR = ndviRating(ndvi);
-  const moistR = moistureRating(moisturePct);
   const visibleSats = SATS.filter((s) => sources[s.key].used);
 
   return (
