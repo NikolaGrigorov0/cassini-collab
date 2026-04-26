@@ -34,6 +34,11 @@ function stressBadgeClass(s: string) {
     : "bg-emerald-100 text-emerald-700";
 }
 
+function fmtM3(v: number): string {
+  if (v <= 0) return "—";
+  return v >= 1000 ? `${(v / 1000).toFixed(1)} хил.` : `${Math.round(v * 10) / 10}`;
+}
+
 export function DeficitScheduleView({ plan, parcels, availablePct, dateFrom, dateTo, onBack }: Props) {
   const parcelMap = new Map(parcels.map((p) => [p.id, p]));
   const allocs = plan.allocations.filter((a) => parcelMap.has(a.parcel_id));
@@ -43,13 +48,13 @@ export function DeficitScheduleView({ plan, parcels, availablePct, dateFrom, dat
   plan.schedule.forEach((s) => {
     if (!grid.has(s.parcel_id)) grid.set(s.parcel_id, new Map());
     const m = grid.get(s.parcel_id)!;
-    m.set(s.scheduled_date, (m.get(s.scheduled_date) ?? 0) + s.dose_mm);
+    m.set(s.scheduled_date, (m.get(s.scheduled_date) ?? 0) + s.dose_m3);
   });
 
   const dayTotals = plan.days.map((d) => {
     let t = 0;
     plan.schedule.forEach((s) => {
-      if (s.scheduled_date === d) t += s.dose_mm;
+      if (s.scheduled_date === d) t += s.dose_m3;
     });
     return Math.round(t * 10) / 10;
   });
@@ -123,7 +128,7 @@ export function DeficitScheduleView({ plan, parcels, availablePct, dateFrom, dat
                                 {dose > 0 ? (
                                   <>
                                     {isCriticalWarn && <span className="mr-0.5">⚠</span>}
-                                    {dose}mm
+                                    {fmtM3(dose)} м³
                                   </>
                                 ) : (
                                   "—"
@@ -139,7 +144,7 @@ export function DeficitScheduleView({ plan, parcels, availablePct, dateFrom, dat
                     <td className="sticky left-0 z-10 bg-muted/30 p-3 font-semibold">Общо за деня</td>
                     {dayTotals.map((t, i) => (
                       <td key={i} className="p-2 text-center text-xs font-bold">
-                        {t}mm
+                        {fmtM3(t)} м³
                       </td>
                     ))}
                   </tr>
@@ -167,8 +172,11 @@ export function DeficitScheduleView({ plan, parcels, availablePct, dateFrom, dat
                   {CROP_LABELS[a.parcel.crop_type]}
                 </div>
                 <div className="mt-2 text-sm">
-                  Норма: <b>{a.normalDose}mm</b> → Дефицит:{" "}
-                  <b className="text-amber-700">{a.deficitDose}mm</b>
+                  Нужни: <b>{fmtM3(a.normalM3)} м³</b> → Ще получи:{" "}
+                  <b className="text-amber-700">{fmtM3(a.deficitM3)} м³</b>
+                </div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  ({a.dailyDoseMm} mm/ден × {plan.days.length} дни × {a.parcel.area_hectares} ха)
                 </div>
                 <div className="mt-1 text-xs">
                   Очаквана загуба:{" "}
@@ -195,8 +203,9 @@ export function DeficitScheduleView({ plan, parcels, availablePct, dateFrom, dat
 
           <div className="mt-4 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
             <div>
-              Общо вода: <b>{plan.totalScheduled}mm</b> от {plan.totalAvailable}mm налични{" "}
-              <span className="text-amber-700">({plan.efficiencyPct}% ефективност)</span>
+              Общо разпределена вода: <b>{fmtM3(plan.totalScheduledM3)} м³</b> от{" "}
+              {fmtM3(plan.totalAvailableM3)} м³ налични{" "}
+              <span className="text-amber-700">({plan.efficiencyPct}% използваемост)</span>
             </div>
             <div>
               Очаквано общо намаление на реколтата:{" "}
