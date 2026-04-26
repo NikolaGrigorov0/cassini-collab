@@ -153,9 +153,13 @@ export function IrrigationCard({
   // STATE 3: green status, no irrigation needed
   const noNeed = status === "green" && doseToday === 0 && !isWatered;
 
+  // ----- Effective status (after accounting for today's irrigation) -----
+  // Ако фермерът вече е полял днес, не показваме "Силен воден стрес".
+  const effectiveStatus: Props["status"] = isWatered ? "green" : status;
+
   // ----- Card background -----
   let cardBg = "bg-amber-50 border-amber-200";
-  if (status === "red") cardBg = "bg-red-50 border-red-200";
+  if (effectiveStatus === "red") cardBg = "bg-red-50 border-red-200";
   if (isWatered) cardBg = "bg-emerald-50 border-emerald-200";
   else if (rainExpected) cardBg = "bg-blue-50 border-blue-200";
   else if (noNeed) cardBg = "bg-emerald-50 border-emerald-200";
@@ -181,14 +185,14 @@ export function IrrigationCard({
 
   return (
     <div className={`rounded-2xl border-2 p-5 shadow-card ${cardBg}`}>
-      {/* Header: status badge */}
+      {/* Header: status badge (reflects today's irrigation) */}
       <div className="flex items-center gap-2">
-        <span className="text-lg">{STATUS_DOT[status]}</span>
+        <span className="text-lg">{STATUS_DOT[effectiveStatus]}</span>
         <span
           className="text-sm font-semibold uppercase tracking-wide"
-          style={{ color: STATUS_COLOR[status] }}
+          style={{ color: STATUS_COLOR[effectiveStatus] }}
         >
-          {STATUS_LABEL[status]}
+          {isWatered ? "ПОЛЯТО ДНЕС" : STATUS_LABEL[effectiveStatus]}
         </span>
       </div>
 
@@ -306,12 +310,17 @@ export function IrrigationCard({
             <div>
               <b className="text-foreground">Защо:</b>{" "}
               {rainToday > 0
-                ? `ETc ${etcToday.toFixed(1)}mm − Дъжд ${rainToday.toFixed(1)}mm = Нужда ${doseToday.toFixed(1)}mm`
-                : `ETc ${etcToday.toFixed(1)}mm · Без валежи`}
+                ? `Дневна нужда ETc ${etcToday.toFixed(1)}mm − Дъжд ${rainToday.toFixed(1)}mm`
+                : `Дневна нужда ETc ${etcToday.toFixed(1)}mm · Без валежи`}
             </div>
-            <div>
-              NDMI: {ndmi.toFixed(2)} · {Math.round(moisturePct)}% ППВ
-            </div>
+            {doseToday > Math.max(0, etcToday - rainToday) + 0.5 && (
+              <div>
+                <b className="text-foreground">Защо повече от ETc:</b>{" "}
+                Почвата е суха ({Math.round(moisturePct)}% ППВ, NDMI {ndmi.toFixed(2)}) —
+                препоръката добавя вода за да покрие натрупания дефицит, не само днешната нужда.
+              </div>
+            )}
+            <div>NDMI: {ndmi.toFixed(2)} · {Math.round(moisturePct)}% ППВ</div>
           </div>
         )}
       </div>
@@ -356,9 +365,9 @@ export function IrrigationCard({
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>
                   <th className="px-2 py-1.5 text-left font-semibold">Ден</th>
-                  <th className="px-2 py-1.5 text-right font-semibold">Нужда</th>
+                  <th className="px-2 py-1.5 text-right font-semibold" title="Дневна изпарителна нужда (ETc)">Нужда</th>
                   <th className="px-2 py-1.5 text-right font-semibold">Дъжд</th>
-                  <th className="px-2 py-1.5 text-right font-semibold">Полей</th>
+                  <th className="px-2 py-1.5 text-right font-semibold" title="Препоръчана доза (включва натрупан дефицит)">Полей</th>
                 </tr>
               </thead>
               <tbody>
@@ -387,6 +396,9 @@ export function IrrigationCard({
             <div className="border-t border-border bg-primary/5 px-2 py-2 text-xs">
               Общо за седмицата: <b>{weekTotalM3.toFixed(1)} м³</b> ({weekTotalM3PerDka.toFixed(1)} м³/дка)
               {weekPumpHrs !== null && <> · {formatHours(weekPumpHrs)} помпа</>}
+            </div>
+            <div className="border-t border-border bg-muted/20 px-2 py-2 text-[11px] text-muted-foreground">
+              ℹ️ <b>Нужда</b> = дневно изпарение (ETc). <b>Полей</b> = препоръчана доза, която може да е по-голяма ако почвата вече е изсъхнала и трябва да се навакса дефицит.
             </div>
           </div>
         )}
