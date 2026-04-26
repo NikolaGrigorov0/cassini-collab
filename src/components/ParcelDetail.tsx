@@ -344,6 +344,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             recommendedDoseMM={dose}
             currentStatus={statusKey as "green" | "yellow" | "red"}
             soilType={parcel.soil_type ?? null}
+            areaHectares={parcel.area_hectares}
             onIrrigationChange={onIrrigationChange}
           />
 
