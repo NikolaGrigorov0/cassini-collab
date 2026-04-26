@@ -49,23 +49,35 @@ function freshnessColor(d: Date | null): string {
   return "bg-red-500";
 }
 
-function ndmiFarmer(v: number): string {
-  if (v > 0.3) return "Растенията са добре наводнени 🟢";
-  if (v >= 0.1) return "Лека жажда — скоро ще трябва вода 🟡";
-  if (v >= 0) return "Растенията са жадни — полей скоро 🔴";
-  return "Сериозна суша — полей веднага! 🔴";
+type Rating = { label: "Лошо" | "Нормално" | "Добро"; emoji: string; hint: string };
+
+function ratingFromPct(pct: number, hints: { good: string; ok: string; bad: string }): Rating {
+  if (pct >= 70) return { label: "Добро", emoji: "🟢", hint: hints.good };
+  if (pct >= 40) return { label: "Нормално", emoji: "🟡", hint: hints.ok };
+  return { label: "Лошо", emoji: "🔴", hint: hints.bad };
 }
 
-function ndviFarmer(v: number): string {
-  if (v > 0.6) return "Гъста и здрава растителност 🟢";
-  if (v >= 0.3) return "Умерена растителност 🟡";
-  return "Слаба растителност или гола почва 🔴";
+function ndmiRating(pct: number): Rating {
+  return ratingFromPct(pct, {
+    good: "Растенията са добре наводнени",
+    ok: "Лека жажда — скоро ще трябва вода",
+    bad: "Растенията са жадни — полей скоро",
+  });
 }
 
-function moistureFarmer(pct: number): string {
-  if (pct >= 80) return "Почвата е добре напоена 🟢";
-  if (pct >= 70) return "Приближаваш прага — подгответе помпата 🟡";
-  return "Под критичния праг — полей веднага! 🔴";
+function ndviRating(v: number): Rating {
+  // NDVI 0..1 → проценти базирани на типичния обхват за здрав посев
+  if (v > 0.6) return { label: "Добро", emoji: "🟢", hint: "Гъста и здрава растителност" };
+  if (v >= 0.3) return { label: "Нормално", emoji: "🟡", hint: "Умерена растителност" };
+  return { label: "Лошо", emoji: "🔴", hint: "Слаба растителност или гола почва" };
+}
+
+function moistureRating(pct: number): Rating {
+  return ratingFromPct(pct, {
+    good: "Почвата е добре напоена",
+    ok: "Влагата е средна — следи прогнозата",
+    bad: "Под критичния праг — полей веднага!",
+  });
 }
 
 function ndmiToPct(ndmi: number, fc?: number | null, wp?: number | null): number {
