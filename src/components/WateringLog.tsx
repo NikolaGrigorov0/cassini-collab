@@ -101,7 +101,12 @@ export function WateringLog({
   const minM3 = Math.max(1, Math.round(MIN_MM * areaDka));
   const maxM3 = Math.round(MAX_MM * areaDka);
   const [open, setOpen] = useState(false);
-  const [doseM3, setDoseM3] = useState<number>(defaultDoseM3);
+  // Hold the input as a string so the user can clear it and type freely
+  // (numeric state forced an unwanted leading "0" / clamped values on each
+  // keystroke, which made editing painful on mobile).
+  const [doseInput, setDoseInput] = useState<string>(String(defaultDoseM3));
+  const parsedDoseM3 = Number(doseInput.replace(",", "."));
+  const doseM3 = Number.isFinite(parsedDoseM3) && parsedDoseM3 > 0 ? parsedDoseM3 : 0;
   // Derived mm dose used for DB + correction calculations.
   const dose = doseM3 / areaDka;
   const [saving, setSaving] = useState(false);
@@ -139,16 +144,18 @@ export function WateringLog({
   }, [loadHistory]);
 
   const startEdit = () => {
-    setDoseM3(defaultDoseM3);
+    setDoseInput(String(defaultDoseM3));
     setOpen(true);
   };
 
   const adjust = (delta: number) => {
-    setDoseM3((d) => Math.min(maxM3, Math.max(minM3, d + delta)));
+    const base = doseM3 > 0 ? doseM3 : defaultDoseM3;
+    const next = Math.min(maxM3, Math.max(minM3, base + delta));
+    setDoseInput(String(next));
   };
 
   const confirm = async () => {
-    if (!Number.isFinite(dose) || dose <= 0) {
+    if (!Number.isFinite(dose) || dose <= 0 || doseM3 < minM3) {
       toast.error("Въведи валидно количество в м³");
       return;
     }
@@ -383,10 +390,17 @@ export function WateringLog({
               step="1"
               min={minM3}
               max={maxM3}
-              value={doseM3}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                if (Number.isFinite(v)) setDoseM3(Math.min(maxM3, Math.max(minM3, v)));
+              value={doseInput}
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => setDoseInput(e.target.value)}
+              onBlur={() => {
+                if (doseInput.trim() === "" || doseM3 < minM3) {
+                  setDoseInput(String(minM3));
+                } else if (doseM3 > maxM3) {
+                  setDoseInput(String(maxM3));
+                } else {
+                  setDoseInput(String(Math.round(doseM3)));
+                }
               }}
               className="text-center text-lg font-bold"
             />
