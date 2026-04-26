@@ -261,6 +261,9 @@ export function SatelliteDataSection({
   }, [parcelId, dataSource]);
 
   const moisturePct = ndmiToPct(ndmi, fcPct, wpPct);
+  const ndmiR = ndmiRating(moisturePct);
+  const ndviR = ndviRating(ndvi);
+  const moistR = moistureRating(moisturePct);
   const visibleSats = SATS.filter((s) => sources[s.key].used);
 
   return (
@@ -350,12 +353,14 @@ export function SatelliteDataSection({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">NDMI</span>
-                <span className="text-sm font-mono">{ndmi.toFixed(2)}</span>
+                <span className="text-sm font-mono">
+                  {mode === "farmer" ? `${ndmiR.label} ${ndmiR.emoji}` : ndmi.toFixed(2)}
+                </span>
               </div>
               <RangeBar value={ndmi} />
               <p className="text-xs text-muted-foreground whitespace-pre-line">
                 {mode === "farmer"
-                  ? ndmiFarmer(ndmi)
+                  ? ndmiR.hint
                   : "Normalized Difference Moisture Index\nNDMI = (B08 - B11) / (B08 + B11)\nNIR (842nm) vs SWIR (1610nm)\nSensitive to canopy water content"}
               </p>
             </div>
@@ -364,12 +369,14 @@ export function SatelliteDataSection({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">NDVI</span>
-                <span className="text-sm font-mono">{ndvi.toFixed(2)}</span>
+                <span className="text-sm font-mono">
+                  {mode === "farmer" ? `${ndviR.label} ${ndviR.emoji}` : ndvi.toFixed(2)}
+                </span>
               </div>
               <RangeBar value={ndvi} />
               <p className="text-xs text-muted-foreground whitespace-pre-line">
                 {mode === "farmer"
-                  ? ndviFarmer(ndvi)
+                  ? ndviR.hint
                   : "Normalized Difference Vegetation Index\nNDVI = (B08 - B04) / (B08 + B04)\nNIR (842nm) vs Red (665nm)\nProxy for biomass and crop health"}
               </p>
             </div>
@@ -378,12 +385,14 @@ export function SatelliteDataSection({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">Влага (% ППВ)</span>
-                <span className="text-sm font-mono">{moisturePct.toFixed(0)}%</span>
+                <span className="text-sm font-mono">
+                  {mode === "farmer" ? `${moistR.label} ${moistR.emoji}` : `${moisturePct.toFixed(0)}%`}
+                </span>
               </div>
               <SemiGauge value={moisturePct} />
               <p className="text-xs text-muted-foreground whitespace-pre-line">
                 {mode === "farmer"
-                  ? moistureFarmer(moisturePct)
+                  ? moistR.hint
                   : "% of Field Water Capacity (ППВ)\nDerived from NDMI using soil-specific\nFC and WP NDMI thresholds:\npct = (NDMI - WP) / (FC - WP) × 100\nThresholds vary by soil texture"}
               </p>
             </div>
