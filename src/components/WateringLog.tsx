@@ -390,10 +390,17 @@ export function WateringLog({
               step="1"
               min={minM3}
               max={maxM3}
-              value={doseM3}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                if (Number.isFinite(v)) setDoseM3(Math.min(maxM3, Math.max(minM3, v)));
+              value={doseInput}
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => setDoseInput(e.target.value)}
+              onBlur={() => {
+                if (doseInput.trim() === "" || doseM3 < minM3) {
+                  setDoseInput(String(minM3));
+                } else if (doseM3 > maxM3) {
+                  setDoseInput(String(maxM3));
+                } else {
+                  setDoseInput(String(Math.round(doseM3)));
+                }
               }}
               className="text-center text-lg font-bold"
             />
