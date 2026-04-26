@@ -33,6 +33,8 @@ interface Props {
   currentStatus?: "green" | "yellow" | "red";
   /** Soil type label from ISRIC enrichment (drives soil-aware NDMI lift). */
   soilType?: string | null;
+  /** Parcel area in hectares — used to convert m³ ⇄ mm for the input UI. */
+  areaHectares?: number;
   /** Called after a successful confirm/undo so the parent can patch its
    *  liveData (dose, status, reason, NDMI, forecast) and the UI reflects
    *  the new soil-moisture state immediately. */
@@ -67,6 +69,12 @@ interface IrrigationRow {
 const MIN_MM = 1;
 const MAX_MM = 200;
 
+/** Format a m³ total nicely (e.g. 1.2к м³ for >= 1000). */
+function fmtM3(m3: number): string {
+  if (m3 >= 1000) return `${(m3 / 1000).toFixed(1)}к м³`;
+  return `${m3.toFixed(1)} м³`;
+}
+
 const STATUS_EMOJI: Record<string, string> = {
   green: "🟢",
   yellow: "🟡",
@@ -82,11 +90,21 @@ export function WateringLog({
   recommendedDoseMM,
   currentStatus,
   soilType,
+  areaHectares,
   onIrrigationChange,
 }: Props) {
-  const defaultDose = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
+  // Input is in m³ (total for the parcel). 1mm × 1дка = 1m³, so m³ = mm × area_ha × 10.
+  const areaDka = areaHectares && areaHectares > 0 ? areaHectares * 10 : 1;
+  const defaultDoseMM = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
+  const defaultDoseM3 = Math.max(1, Math.round(defaultDoseMM * areaDka));
+  // Step size for +/- buttons: 5 m³/дка equivalent.
+  const stepM3 = Math.max(1, Math.round(5 * areaDka));
+  const minM3 = Math.max(1, Math.round(MIN_MM * areaDka));
+  const maxM3 = Math.round(MAX_MM * areaDka);
   const [open, setOpen] = useState(false);
-  const [dose, setDose] = useState<number>(defaultDose);
+  const [doseM3, setDoseM3] = useState<number>(defaultDoseM3);
+  // Derived mm dose used for DB + correction calculations.
+  const dose = doseM3 / areaDka;
   const [saving, setSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<IrrigationRow[]>([]);
@@ -122,17 +140,17 @@ export function WateringLog({
   }, [loadHistory]);
 
   const startEdit = () => {
-    setDose(defaultDose);
+    setDoseM3(defaultDoseM3);
     setOpen(true);
   };
 
   const adjust = (delta: number) => {
-    setDose((d) => Math.min(MAX_MM, Math.max(MIN_MM, d + delta)));
+    setDoseM3((d) => Math.min(maxM3, Math.max(minM3, d + delta)));
   };
 
   const confirm = async () => {
     if (!Number.isFinite(dose) || dose <= 0) {
-      toast.error("Въведи валидна доза в мм");
+      toast.error("Въведи валидно количество в м³");
       return;
     }
     setSaving(true);
@@ -183,7 +201,7 @@ export function WateringLog({
 
       await createNotification({
         title: `💧 Записано напояване — ${parcelName}`,
-        body: `${dose} мм. ${correction.newReason}`,
+        body: `${fmtM3(doseM3)}. ${correction.newReason}`,
         kind: "irrigation",
         parcel_id: parcelId,
       });
