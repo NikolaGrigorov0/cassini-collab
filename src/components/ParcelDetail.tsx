@@ -29,6 +29,7 @@ import { WeatherForecast } from "@/components/WeatherForecast";
 import { SoilInfoCard } from "@/components/SoilInfoCard";
 import { SatelliteDataSection } from "@/components/SatelliteDataSection";
 import { IrrigationCard } from "@/components/IrrigationCard";
+import { WaterSavingsCard } from "@/components/WaterSavingsCard";
 
 export interface LiveParcelData {
   ndmi: number;
@@ -391,16 +392,31 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           {/* Forecast panel hidden — data still flows through IrrigationCard's
               weekly table. Re-enable by restoring <ForecastChart /> here. */}
 
-          {/* Savings */}
-          <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-4">
-            <div>
-              <div className="text-xs font-medium text-muted-foreground">Спестявания спрямо традиционно</div>
-              <div className="mt-0.5 text-lg font-bold text-primary">~32% по-малко вода</div>
-            </div>
-            <div className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
-              ECO
-            </div>
-          </div>
+          {/* Savings — real numbers from irrigation_events vs ETc baseline */}
+          {(() => {
+            const ring = parcel.geometry?.coordinates?.[0] as
+              | [number, number][]
+              | undefined;
+            if (!ring || ring.length < 3) return null;
+            let sx = 0;
+            let sy = 0;
+            for (const [x, y] of ring) {
+              sx += x;
+              sy += y;
+            }
+            const lon = sx / ring.length;
+            const lat = sy / ring.length;
+            return (
+              <WaterSavingsCard
+                parcelId={parcel.id}
+                cropType={parcel.crop_type}
+                growthPhase={parcel.growth_phase}
+                areaHectares={parcel.area_hectares}
+                lat={lat}
+                lon={lon}
+              />
+            );
+          })()}
 
           <Button onClick={handleShare} className="w-full" variant="outline" disabled={isEditing}>
             <Share2 className="mr-2 h-4 w-4" />
