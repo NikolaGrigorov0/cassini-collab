@@ -322,15 +322,6 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             <p className="-mt-2 px-1 text-xs italic text-muted-foreground">{reason}</p>
           )}
 
-          {/* Phenophase timeline + dynamic Kc */}
-          <PhenophaseTimeline
-            parcelId={parcel.id}
-            cropType={parcel.crop_type}
-            sowingDate={parcel.sowing_date ?? null}
-            ndvi={ndvi}
-            onEditDetails={onEditDetails}
-          />
-
           {/* 7-day weather forecast (Open-Meteo) for this parcel */}
           <WeatherForecast geometry={parcel.geometry} />
 
@@ -386,6 +377,15 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             fcPct={parcel.soil_fc_pct ?? null}
             wpPct={parcel.soil_wp_pct ?? null}
             dataSource={liveData?.source ?? null}
+          />
+
+          {/* Phenophase timeline + dynamic Kc — moved below satellite data */}
+          <PhenophaseTimeline
+            parcelId={parcel.id}
+            cropType={parcel.crop_type}
+            sowingDate={parcel.sowing_date ?? null}
+            ndvi={ndvi}
+            onEditDetails={onEditDetails}
           />
 
           {/* Forecast panel hidden — data still flows through IrrigationCard's
