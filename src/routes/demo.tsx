@@ -6,7 +6,7 @@ import { Logo } from "@/components/Logo";
 import { ParcelMap } from "@/components/ParcelMap";
 import { ParcelDetail } from "@/components/ParcelDetail";
 import { CROP_ICONS, CROP_LABELS, STATUS_COLORS } from "@/lib/mockData";
-import { DEMO_CENTER, DEMO_PARCELS, DEMO_ZOOM } from "@/lib/demoData";
+import { DEMO_CENTER, DEMO_PARCELS, DEMO_WATERED_TODAY, DEMO_ZOOM } from "@/lib/demoData";
 
 export const Route = createFileRoute("/demo")({
   head: () => ({
@@ -128,7 +128,12 @@ function DemoTour() {
           {/* Parcel quick-jump chips (top of map) */}
           <div className="pointer-events-auto absolute left-1/2 top-4 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-full border border-border bg-card/95 p-1.5 shadow-elevated backdrop-blur">
             {DEMO_PARCELS.map((p, i) => {
-              const s = STATUS_COLORS[p.status];
+              const watered = DEMO_WATERED_TODAY[p.id];
+              // When this demo parcel is "Полято днес" we override the chip
+              // colour to green so the chip mirrors the badge in the real
+              // dashboard list.
+              const effectiveStatus = watered ? "green" : p.status;
+              const s = STATUS_COLORS[effectiveStatus];
               const active = p.id === selectedId;
               return (
                 <button
@@ -143,6 +148,14 @@ function DemoTour() {
                   </span>
                   <span className="hidden sm:inline">{CROP_ICONS[p.crop_type]} {p.name}</span>
                   <span className="sm:hidden">{CROP_ICONS[p.crop_type]}</span>
+                  {watered && (
+                    <span
+                      className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-700"
+                      title={`Полято днес · ${watered.time}`}
+                    >
+                      ✓ Полято
+                    </span>
+                  )}
                 </button>
               );
             })}
