@@ -151,7 +151,7 @@ function Dashboard() {
         const [{ data: r }, { data: nd }] = await Promise.all([
           supabase
             .from("irrigation_recommendations")
-            .select("parcel_id, status, dose_mm, reason, created_at")
+            .select("parcel_id, status, dose_mm, reason, created_at, forecast_json")
             .in("parcel_id", ids)
             .order("created_at", { ascending: false }),
           supabase
@@ -178,6 +178,12 @@ function Dashboard() {
       const merged: MockParcel[] = (p ?? []).map((row: ParcelRow) => {
         const rec = recs.find((x) => x.parcel_id === row.id);
         const nd = ndmiRows.find((x) => x.parcel_id === row.id);
+        // Prefer today's daily dose from forecast_json[0] (matches IrrigationCard).
+        // Falls back to the weekly recommendation if forecast is missing.
+        const fc = Array.isArray(rec?.forecast_json) ? (rec.forecast_json as Array<{ dose_mm?: number }>) : null;
+        const todayDose = fc && fc.length > 0 && typeof fc[0]?.dose_mm === "number"
+          ? Number(fc[0].dose_mm)
+          : Number(rec?.dose_mm ?? 0);
         let geometry: GeoJSON.Polygon;
         try {
           geometry = JSON.parse(row.geometry);
@@ -192,7 +198,7 @@ function Dashboard() {
           area_hectares: Number(row.area_hectares),
           geometry,
           status: (rec?.status ?? "yellow") as IrrigationStatus,
-          dose_mm: Number(rec?.dose_mm ?? 0),
+          dose_mm: todayDose,
           reason: rec?.reason ?? t("dashboard.noAnalysisYet"),
           ndmi: nd ? Number(nd.ndmi_value) : 0.15,
           ndvi: nd ? Number(nd.ndvi_value) : 0.6,
