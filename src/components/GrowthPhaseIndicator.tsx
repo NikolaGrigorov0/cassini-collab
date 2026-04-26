@@ -93,14 +93,42 @@ export function GrowthPhaseIndicator({ cropType, growthPhase }: Props) {
   const kc = KC[cropType][growthPhase];
 
   return (
-    <div className="space-y-3">
-      {/* PART 1: Progress bar */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-        <div className="mb-3 flex items-center gap-2">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+      {/* Header: title + crop + current phase + Kc */}
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
           <Sprout className="h-4 w-4 text-emerald-600" />
           <h3 className="text-sm font-semibold">Фаза на растеж</h3>
         </div>
-        <div className="relative px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xl leading-none">{CROP_EMOJI[cropType]}</span>
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              {CROP_NAME_BG[cropType]}
+            </div>
+            <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+              {PHASE_BG[growthPhase]} фаза
+            </div>
+          </div>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                  Kc {kc.toFixed(2)}
+                  <Info className="h-2.5 w-2.5" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[220px] text-xs">
+                Коефициент на водопотребление (FAO-56). По-висок Kc = повече вода
+                за тази фаза.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="relative px-1">
           {/* Connector lines */}
           <div className="absolute left-[12%] right-[12%] top-3 flex h-[3px] items-center">
             {[0, 1, 2].map((i) => {
@@ -153,43 +181,12 @@ export function GrowthPhaseIndicator({ cropType, growthPhase }: Props) {
               );
             })}
           </div>
-        </div>
       </div>
 
-      {/* PART 2 + 3: Crop + phase info card */}
-      <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
-        <div className="flex items-start gap-3">
-          <div className="text-3xl leading-none">{CROP_EMOJI[cropType]}</div>
-          <div className="min-w-0 flex-1">
-            <div className="text-xs text-muted-foreground">{CROP_NAME_BG[cropType]}</div>
-            <div className="text-sm font-bold text-foreground">
-              {PHASE_BG[growthPhase]} фаза
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {WATER_NEED[cropType][growthPhase]}
-            </p>
-            <div className="mt-2 flex justify-end">
-              <TooltipProvider delayDuration={150}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
-                      Kc = {kc.toFixed(2)}
-                      <Info className="h-2.5 w-2.5" />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[220px] text-xs">
-                    Коефициент на водопотребление (FAO-56). По-висок Kc = повече вода
-                    за тази фаза.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-        </div>
+      {/* Water-need description for current phase */}
+      <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
+        💧 {WATER_NEED[cropType][growthPhase]}
       </div>
-
-      {/* PART 4 hidden — phase is auto-derived from sowing date; manual change
-          is available via parcel edit. */}
     </div>
   );
 }
