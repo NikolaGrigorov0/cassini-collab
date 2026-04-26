@@ -18,10 +18,67 @@ export interface CorrectionResult {
   newReason: string;
   /** Days until the next satellite check makes sense given the new status. */
   nextCheckInDays: number;
+  /** Soil-drain rate from the crop×phase table (1.0 = baseline). */
+  drainRate: number;
+  /** Crop+phase explanation appended to newReason and shown to the farmer. */
+  dynamicsReason: string;
 }
 
 const NDMI_PER_10MM = 0.06;
 const FIELD_CAPACITY_NDMI = 0.45;
+
+/** Crop × phase water dynamics:
+ *  - ndmiLiftMultiplier: how much faster/slower NDMI rises after irrigation
+ *  - drainRate: how fast the soil dries afterwards (1.0 = baseline loam/loam)
+ *  - reason: farmer-facing explanation in Bulgarian
+ */
+export const CROP_PHASE_WATER_DYNAMICS: Record<
+  string,
+  Record<string, { ndmiLiftMultiplier: number; drainRate: number; reason: string }>
+> = {
+  wheat: {
+    initial:     { ndmiLiftMultiplier: 0.70, drainRate: 0.8, reason: "Пшеницата в начална фаза има плитки корени — водата се задържа близо до повърхността." },
+    development: { ndmiLiftMultiplier: 0.85, drainRate: 0.9, reason: "Братене — умерено усвояване на вода." },
+    mid:         { ndmiLiftMultiplier: 1.00, drainRate: 1.0, reason: "Изкласяване — пикова нужда от вода." },
+    late:        { ndmiLiftMultiplier: 0.60, drainRate: 0.7, reason: "Узряване — пшеницата почти не усвоява вода, почвата изсъхва бавно." },
+  },
+  corn: {
+    initial:     { ndmiLiftMultiplier: 0.75, drainRate: 0.8, reason: "Поникване — ниска водна нужда, плитки корени." },
+    development: { ndmiLiftMultiplier: 0.90, drainRate: 1.0, reason: "Интензивен растеж — нарастваща нужда." },
+    mid:         { ndmiLiftMultiplier: 1.10, drainRate: 1.2, reason: "Опрашване — критична фаза! Царевицата усвоява вода много бързо." },
+    late:        { ndmiLiftMultiplier: 0.65, drainRate: 0.7, reason: "Узряване — намалена нужда." },
+  },
+  tomatoes: {
+    initial:     { ndmiLiftMultiplier: 0.80, drainRate: 0.9, reason: "Вкореняване на разсада." },
+    development: { ndmiLiftMultiplier: 1.00, drainRate: 1.1, reason: "Вегетативен растеж — висока нужда от вода." },
+    mid:         { ndmiLiftMultiplier: 1.20, drainRate: 1.3, reason: "Цъфтеж и завързване — доматите усвояват вода много интензивно. Недостигът тук = нулева реколта." },
+    late:        { ndmiLiftMultiplier: 0.85, drainRate: 0.9, reason: "Узряване на плодовете — умерена нужда." },
+  },
+  sunflower: {
+    initial:     { ndmiLiftMultiplier: 0.65, drainRate: 0.7, reason: "Поникване — слънчогледът е сухоустойчив в началото." },
+    development: { ndmiLiftMultiplier: 0.80, drainRate: 0.9, reason: "Листна розетка." },
+    mid:         { ndmiLiftMultiplier: 1.05, drainRate: 1.1, reason: "Цъфтеж — умерено висока нужда." },
+    late:        { ndmiLiftMultiplier: 0.55, drainRate: 0.6, reason: "Узряване на семената — слънчогледът понася добре воден стрес тук." },
+  },
+  vineyard: {
+    initial:     { ndmiLiftMultiplier: 0.70, drainRate: 0.8, reason: "Разпукване на пъпки — лозата има дълбоки корени, бавно усвояване." },
+    development: { ndmiLiftMultiplier: 0.85, drainRate: 0.9, reason: "Цъфтеж — умерена нужда." },
+    mid:         { ndmiLiftMultiplier: 1.00, drainRate: 1.0, reason: "Наедряване на гроздето." },
+    late:        { ndmiLiftMultiplier: 0.50, drainRate: 0.5, reason: "Узряване — воденият стрес тук концентрира захарите. Не прекалявай с поливането!" },
+  },
+};
+
+function getCropPhaseDynamics(cropType: string, growthPhase: string) {
+  const crop = (cropType || "").toLowerCase();
+  const phase = (growthPhase || "").toLowerCase();
+  return (
+    CROP_PHASE_WATER_DYNAMICS[crop]?.[phase] ?? {
+      ndmiLiftMultiplier: 1.0,
+      drainRate: 1.0,
+      reason: "",
+    }
+  );
+}
 
 /** Per-soil-type multiplier for the NDMI lift caused by irrigation.
  *  Sandy drains faster (less retained water → smaller NDMI gain).
@@ -39,43 +96,64 @@ function soilMultiplier(soilType?: string | null): number {
 export function recalculateAfterIrrigation(
   currentNDMI: number,
   doseMM: number,
-  // crop/phase kept in the signature for forward compatibility (FAO-56 tuning).
-  _cropType: string,
-  _growthPhase: string,
+  cropType: string,
+  growthPhase: string,
   originalDoseMM = 0,
   soilType?: string | null,
 ): CorrectionResult {
-  const lift = (doseMM / 10) * NDMI_PER_10MM * soilMultiplier(soilType);
+  const dynamics = getCropPhaseDynamics(cropType, growthPhase);
+  const baseLift = (doseMM / 10) * NDMI_PER_10MM;
+  const lift = baseLift * soilMultiplier(soilType) * dynamics.ndmiLiftMultiplier;
   const correctedNDMI = Math.min(FIELD_CAPACITY_NDMI, currentNDMI + lift);
 
   // Use the *original* recommended dose as the baseline for follow-up actions
   // — if it wasn't supplied, fall back to the just-applied dose.
   const baseDose = originalDoseMM > 0 ? originalDoseMM : doseMM;
 
+  const appendDynamics = (txt: string) =>
+    dynamics.reason ? `${txt} ${dynamics.reason}` : txt;
+
+  // Drain-rate-aware next-check schedule.
+  const nextCheckFor = (status: RecStatus): number => {
+    if (status === "red") return 1;
+    if (status === "green") return dynamics.drainRate <= 0.7 ? 7 : 5;
+    // yellow
+    return dynamics.drainRate <= 0.8 ? 4 : 3;
+  };
+
   if (correctedNDMI > 0.2) {
+    const status: RecStatus = "green";
     return {
       correctedNDMI,
       newDose: 0,
-      newStatus: "green",
-      newReason: "Полято днес. Влагата е достатъчна за следващите 5-7 дни.",
-      nextCheckInDays: 5,
+      newStatus: status,
+      newReason: appendDynamics("Полято днес. Влагата е достатъчна за следващите 5-7 дни."),
+      nextCheckInDays: nextCheckFor(status),
+      drainRate: dynamics.drainRate,
+      dynamicsReason: dynamics.reason,
     };
   }
   if (correctedNDMI > 0) {
+    const status: RecStatus = "yellow";
     return {
       correctedNDMI,
       newDose: Math.round(baseDose * 0.7 * 10) / 10,
-      newStatus: "yellow",
-      newReason: "Полято днес. Препоръчваме допълнително напояване след 3 дни.",
-      nextCheckInDays: 3,
+      newStatus: status,
+      newReason: appendDynamics("Полято днес. Препоръчваме допълнително напояване след 3 дни."),
+      nextCheckInDays: nextCheckFor(status),
+      drainRate: dynamics.drainRate,
+      dynamicsReason: dynamics.reason,
     };
   }
+  const status: RecStatus = "red";
   return {
     correctedNDMI,
     newDose: Math.round(baseDose * 1.0 * 10) / 10,
-    newStatus: "red",
-    newReason: "Полято днес но влагата е критично ниска. Повторете утре.",
-    nextCheckInDays: 1,
+    newStatus: status,
+    newReason: appendDynamics("Полято днес но влагата е критично ниска. Повторете утре."),
+    nextCheckInDays: nextCheckFor(status),
+    drainRate: dynamics.drainRate,
+    dynamicsReason: dynamics.reason,
   };
 }
 
