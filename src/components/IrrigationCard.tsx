@@ -153,9 +153,13 @@ export function IrrigationCard({
   // STATE 3: green status, no irrigation needed
   const noNeed = status === "green" && doseToday === 0 && !isWatered;
 
+  // ----- Effective status (after accounting for today's irrigation) -----
+  // Ако фермерът вече е полял днес, не показваме "Силен воден стрес".
+  const effectiveStatus: Props["status"] = isWatered ? "green" : status;
+
   // ----- Card background -----
   let cardBg = "bg-amber-50 border-amber-200";
-  if (status === "red") cardBg = "bg-red-50 border-red-200";
+  if (effectiveStatus === "red") cardBg = "bg-red-50 border-red-200";
   if (isWatered) cardBg = "bg-emerald-50 border-emerald-200";
   else if (rainExpected) cardBg = "bg-blue-50 border-blue-200";
   else if (noNeed) cardBg = "bg-emerald-50 border-emerald-200";
@@ -181,14 +185,14 @@ export function IrrigationCard({
 
   return (
     <div className={`rounded-2xl border-2 p-5 shadow-card ${cardBg}`}>
-      {/* Header: status badge */}
+      {/* Header: status badge (reflects today's irrigation) */}
       <div className="flex items-center gap-2">
-        <span className="text-lg">{STATUS_DOT[status]}</span>
+        <span className="text-lg">{STATUS_DOT[effectiveStatus]}</span>
         <span
           className="text-sm font-semibold uppercase tracking-wide"
-          style={{ color: STATUS_COLOR[status] }}
+          style={{ color: STATUS_COLOR[effectiveStatus] }}
         >
-          {STATUS_LABEL[status]}
+          {isWatered ? "ПОЛЯТО ДНЕС" : STATUS_LABEL[effectiveStatus]}
         </span>
       </div>
 
