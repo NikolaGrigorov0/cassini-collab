@@ -76,6 +76,10 @@ function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [parcels, setParcels] = useState<MockParcel[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  // Map of parcel_id → most-recent non-undone irrigation event from today (excluding rain).
+  // When present, the parcel is shown as "Полято днес" (green) in the sidebar list,
+  // overriding any stale red/yellow recommendation in the DB.
+  const [wateredToday, setWateredToday] = useState<Record<string, { amount_mm: number; created_at: string }>>({});
   const [liveByParcel, setLiveByParcel] = useState<Record<string, LiveParcelData>>({});
   const [liveLoadingId, setLiveLoadingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
