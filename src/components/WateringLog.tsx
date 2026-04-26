@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Droplet, Loader2, Minus, Plus, CheckCircle2, History, Satellite, Undo2, ChevronDown,
 } from "lucide-react";
@@ -92,6 +93,8 @@ export function WateringLog({
   areaHectares,
   onIrrigationChange,
 }: Props) {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "bg" ? "bg-BG" : "en-US";
   // Input is in m³ (total for the parcel). 1mm × 1дка = 1m³, so m³ = mm × area_ha × 10.
   const areaDka = areaHectares && areaHectares > 0 ? areaHectares * 10 : 1;
   const defaultDoseMM = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
@@ -156,7 +159,7 @@ export function WateringLog({
 
   const confirm = async () => {
     if (!Number.isFinite(dose) || dose <= 0 || doseM3 < minM3) {
-      toast.error("Въведи валидно количество в м³");
+      toast.error(t("wateringLog.invalidVolume"));
       return;
     }
     setSaving(true);
@@ -182,7 +185,7 @@ export function WateringLog({
           amount_mm: dose,
           dose_mm: dose,
           method: "manual",
-          notes: `Ръчно отчитане през "Полях днес"`,
+          notes: t("wateringLog.manualNote"),
           ndmi_before: currentNDMI,
           ndmi_after: correction.correctedNDMI,
           status_before: statusBefore,
@@ -206,13 +209,13 @@ export function WateringLog({
       });
 
       await createNotification({
-        title: `💧 Записано напояване — ${parcelName}`,
+        title: `${t("wateringLog.loggedNotif")} ${parcelName}`,
         body: `${fmtM3(doseM3)}. ${correction.newReason}`,
         kind: "irrigation",
         parcel_id: parcelId,
       });
 
-      toast.success("Записано");
+      toast.success(t("wateringLog.saved"));
       setOpen(false);
       setTodaysEvent((inserted as unknown as IrrigationRow) ?? null);
       setLastDynamicsReason(correction.dynamicsReason || null);
@@ -227,7 +230,7 @@ export function WateringLog({
       });
       void loadHistory();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Грешка при запис");
+      toast.error(e instanceof Error ? e.message : t("wateringLog.saveError"));
     } finally {
       setSaving(false);
     }
@@ -261,7 +264,7 @@ export function WateringLog({
         confidence_pct: 80,
       });
 
-      toast.success("↩ Напояването е отменено успешно", { duration: 3000 });
+      toast.success(t("wateringLog.undoSuccess"), { duration: 3000 });
       setTodaysEvent(null);
       setConfirmUndo(false);
       setLastDynamicsReason(null);
@@ -277,7 +280,7 @@ export function WateringLog({
       });
       void loadHistory();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Грешка при отмяна");
+      toast.error(e instanceof Error ? e.message : t("wateringLog.undoError"));
     } finally {
       setUndoing(false);
     }
@@ -300,8 +303,8 @@ export function WateringLog({
           <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
             <CheckCircle2 className="h-4 w-4" />
             <span className="text-sm font-bold">
-              Полято днес в{" "}
-              {new Date(todaysEvent.created_at).toLocaleTimeString("bg-BG", {
+              {t("wateringLog.watered")}{" "}
+              {new Date(todaysEvent.created_at).toLocaleTimeString(locale, {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
@@ -311,7 +314,7 @@ export function WateringLog({
             {(() => {
               const mm = todaysEvent.dose_mm ?? todaysEvent.amount_mm;
               const m3 = mm * areaDka;
-              return `Доза: ${fmtM3(m3)} (${mm.toFixed(1)} м³/дка)`;
+              return `${t("wateringLog.dose")}: ${fmtM3(m3)} (${mm.toFixed(1)} ${t("wateringLog.perDka")})`;
             })()}
           </div>
           {lastDynamicsReason && (
@@ -327,13 +330,13 @@ export function WateringLog({
                 onClick={() => setConfirmUndo(true)}
                 className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
               >
-                <Undo2 className="h-3 w-3" /> Отмени
+                <Undo2 className="h-3 w-3" /> {t("wateringLog.undo")}
               </button>
             ) : null}
           </div>
           {confirmUndo && (
             <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200 animate-in fade-in">
-              <p>Сигурен ли си? Данните ще се върнат към преди напояването.</p>
+              <p>{t("wateringLog.undoConfirm")}</p>
               <div className="mt-2 flex justify-end gap-2">
                 <Button
                   size="sm"
@@ -342,7 +345,7 @@ export function WateringLog({
                   onClick={() => setConfirmUndo(false)}
                   disabled={undoing}
                 >
-                  Не
+                  {t("wateringLog.undoNo")}
                 </Button>
                 <Button
                   size="sm"
@@ -351,7 +354,7 @@ export function WateringLog({
                   disabled={undoing}
                 >
                   {undoing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-                  Да, отмени
+                  {t("wateringLog.undoYes")}
                 </Button>
               </div>
             </div>
@@ -365,13 +368,13 @@ export function WateringLog({
           onClick={startEdit}
         >
           <Droplet className="mr-2 h-4 w-4" />
-          💧 Полях днес
+          {t("wateringLog.logToday")}
         </Button>
       ) : (
         /* INLINE FORM */
         <div className="rounded-xl border-2 border-blue-300 bg-blue-50/60 p-4 dark:border-blue-800 dark:bg-blue-950/30 animate-in fade-in slide-in-from-top-1">
           <label className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-            Колко м³ напои? (общо за парцела)
+            {t("wateringLog.askVolume")}
           </label>
           <div className="mt-2 flex items-center gap-2">
             <Button
@@ -404,7 +407,7 @@ export function WateringLog({
               }}
               className="text-center text-lg font-bold"
             />
-            <span className="font-mono text-sm text-muted-foreground">м³</span>
+            <span className="font-mono text-sm text-muted-foreground">{t("units.m3")}</span>
             <Button
               type="button"
               variant="outline"
@@ -419,10 +422,10 @@ export function WateringLog({
           <p className="mt-2 text-xs text-muted-foreground">
             {fmtM3(doseM3)} ≈{" "}
             <span className="font-semibold text-foreground">
-              {dose.toFixed(1)} м³/дка
+              {dose.toFixed(1)} {t("wateringLog.perDka")}
             </span>
             {" · "}
-            {dose.toFixed(1)} мм дълбочина
+            {dose.toFixed(1)} {t("wateringLog.depth")}
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Button
@@ -430,7 +433,7 @@ export function WateringLog({
               onClick={() => setOpen(false)}
               disabled={saving}
             >
-              Отказ
+              {t("wateringLog.cancel")}
             </Button>
             <Button
               className="bg-blue-600 text-white hover:bg-blue-700"
@@ -438,7 +441,7 @@ export function WateringLog({
               disabled={saving}
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Потвърди
+              {t("wateringLog.confirm")}
             </Button>
           </div>
         </div>
@@ -448,7 +451,7 @@ export function WateringLog({
       <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
         <Satellite className="h-3.5 w-3.5 text-primary" />
         <span>
-          📡 Следваща спътникова проверка:{" "}
+          {t("wateringLog.nextSatCheck")}{" "}
           <span className="font-semibold text-foreground">
             {formatNextCheck(upcomingCheck)}
           </span>
@@ -461,7 +464,7 @@ export function WateringLog({
           <Button variant="ghost" className="w-full justify-between text-sm">
             <span className="flex items-center gap-2">
               <History className="h-4 w-4" />
-              История на напояването
+              {t("wateringLog.history")}
               {history.length > 0 && (
                 <Badge variant="secondary" className="ml-1">
                   {history.filter((h) => !h.undone).length}
@@ -474,17 +477,17 @@ export function WateringLog({
         <CollapsibleContent className="pt-2 animate-in slide-in-from-top-1">
           {history.length === 0 ? (
             <p className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-3 text-center text-xs text-muted-foreground">
-              Няма записани напоявания. Натисни "Полях днес" след напояване.
+              {t("wateringLog.historyEmpty")}
             </p>
           ) : (
             <ul className="space-y-2">
               {history.slice(0, 5).map((ev) => {
                 const d = new Date(ev.created_at);
-                const dateLbl = d.toLocaleDateString("bg-BG", {
+                const dateLbl = d.toLocaleDateString(locale, {
                   day: "numeric",
                   month: "short",
                 });
-                const timeLbl = d.toLocaleTimeString("bg-BG", {
+                const timeLbl = d.toLocaleTimeString(locale, {
                   hour: "2-digit",
                   minute: "2-digit",
                 });
@@ -508,7 +511,7 @@ export function WateringLog({
                             {dateLbl}, {timeLbl}
                           </div>
                           <div className={`text-xs text-muted-foreground ${ev.undone ? "line-through" : ""}`}>
-                            {fmtM3(m3)} · {mm.toFixed(1)} м³/дка
+                            {fmtM3(m3)} · {mm.toFixed(1)} {t("wateringLog.perDka")}
                           </div>
                           {(ev.ndmi_before != null && ev.ndmi_after != null) && (
                             <div className="mt-0.5 text-[11px] text-muted-foreground">
@@ -522,7 +525,7 @@ export function WateringLog({
                       </div>
                       {ev.undone ? (
                         <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
-                          Отменено
+                          {t("wateringLog.undone")}
                         </Badge>
                       ) : (
                         <Badge
@@ -533,7 +536,7 @@ export function WateringLog({
                               : "border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300"
                           }
                         >
-                          {isManual ? "Ръчно" : ev.method === "rain" ? "Валеж" : "Препоръчано"}
+                          {isManual ? t("wateringLog.methodManual") : ev.method === "rain" ? t("wateringLog.methodRain") : t("wateringLog.methodAuto")}
                         </Badge>
                       )}
                     </div>
