@@ -24,7 +24,6 @@ import { PhenophaseTimeline } from "@/components/PhenophaseTimeline";
 import { GrowthPhaseIndicator } from "@/components/GrowthPhaseIndicator";
 import { QuickIrrigationActions } from "@/components/QuickIrrigationActions";
 import { WateringLog } from "@/components/WateringLog";
-import { SoilBalanceChart } from "@/components/SoilBalanceChart";
 import { ParcelHistoryDialog } from "@/components/ParcelHistoryDialog";
 import { WeatherForecast } from "@/components/WeatherForecast";
 import { SoilInfoCard } from "@/components/SoilInfoCard";
