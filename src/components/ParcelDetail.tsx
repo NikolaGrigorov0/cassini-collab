@@ -292,86 +292,36 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             />
           ) : null}
 
-          {/* Recommendation */}
-          <div className="rounded-2xl border-2 p-5 shadow-card" style={{ borderColor: status.fill, backgroundColor: `${status.fill}10` }}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <span className="relative flex h-4 w-4">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" style={{ backgroundColor: status.fill }} />
-                    <span className="relative inline-flex h-4 w-4 rounded-full" style={{ backgroundColor: status.fill }} />
-                  </span>
-                  <span className="text-sm font-semibold uppercase tracking-wide" style={{ color: status.fill }}>{status.label}</span>
-                </div>
-                {(() => {
-                  const u = convertWater(dose, parcel.area_hectares);
-                  return (
-                    <>
-                      <div className="mt-4 flex items-baseline gap-2">
-                        <Droplets className="h-7 w-7" style={{ color: status.fill }} />
-                        <span className="text-4xl font-bold leading-none" style={{ color: status.fill }}>
-                          {u.totalM3.toFixed(1)}
-                        </span>
-                        <span className="text-xl font-medium text-muted-foreground">м³</span>
-                      </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        тази седмица · {Math.round(u.totalLiters).toLocaleString("bg-BG")} л
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-              {/* Water battery */}
-              <WaterBattery moisturePct={ndmiToMoisturePct(ndmi)} />
-            </div>
-            <p className="mt-3 text-sm text-foreground">{reason}</p>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Calendar className="h-3 w-3" />
-              {liveData
-                ? `Обновено току-що · валежи последните 7 дни: ${convertWater(liveData.rainfall_mm, parcel.area_hectares).totalM3.toFixed(1)} м³`
-                : `Обновено преди ${recordedAgo} ${recordedAgo === 1 ? "ден" : "дни"}`}
-            </div>
-          </div>
-
-          {/* Water units conversion */}
-          {dose > 0 && (() => {
-            const units = convertWater(dose, parcel.area_hectares);
-            const runtime = pumpRuntimeHours(units.totalM3, parcel.pump_flow_m3h);
-            return (
-              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-                <div className="mb-3 flex items-center gap-2">
-                  <Droplets className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold">Преизчислено в литри и кубици</h3>
-                </div>
-                <div className="space-y-2.5">
-                  <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
-                    <span className="font-mono text-foreground">{formatPerDka(units)}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2.5">
-                    <div>
-                      <div className="text-xs text-muted-foreground">За целия парцел</div>
-                      <div className="font-bold text-primary">{formatTotal(units)}</div>
-                    </div>
-                    <div className="text-right text-[11px] text-muted-foreground">{parcel.area_hectares} ха ({(parcel.area_hectares * 10).toFixed(1)} дка)</div>
-                  </div>
-                  {parcel.pump_flow_m3h && runtime !== null ? (
-                    <div className="flex items-center gap-2 rounded-lg border border-secondary/40 bg-secondary/5 px-3 py-2.5">
-                      <Gauge className="h-4 w-4 shrink-0 text-secondary" />
-                      <div className="text-sm">
-                        Помпа <b>{parcel.pump_flow_m3h} м³/ч</b> → работа{" "}
-                        <b className="text-secondary">{formatHours(runtime)}</b>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-                      <Gauge className="h-3.5 w-3.5 shrink-0" />
-                      Добави дебит на помпата в настройките за да виждаш време за работа.
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
+          {/* Main irrigation recommendation — daily-first, parcel-only volumes */}
+          <IrrigationCard
+            parcelId={parcel.id}
+            areaHectares={parcel.area_hectares}
+            pumpFlowM3h={parcel.pump_flow_m3h}
+            status={statusKey as "green" | "yellow" | "red"}
+            ndmi={ndmi}
+            moisturePct={ndmiToMoisturePct(ndmi)}
+            forecast={
+              liveData?.forecast && liveData.forecast.length > 0
+                ? liveData.forecast
+                : (parcel.forecast as unknown as ForecastDay[]).map((d, i) => ({
+                    date: new Date(Date.now() + i * 86400_000).toISOString().slice(0, 10),
+                    dose_mm: (d as unknown as { dose: number }).dose ?? 0,
+                    status:
+                      ((d as unknown as { dose: number }).dose ?? 0) === 0
+                        ? "green"
+                        : ((d as unknown as { dose: number }).dose ?? 0) < 4
+                          ? "yellow"
+                          : "red",
+                  }))
+            }
+            rain7dMm={liveData?.rainfall_mm ?? 0}
+            source={liveData?.source ?? null}
+            fetchedAt={liveData?.fetchedAt ?? null}
+          />
+          {/* Reason text from satellite pipeline */}
+          {reason && (
+            <p className="-mt-2 px-1 text-xs italic text-muted-foreground">{reason}</p>
+          )}
 
           {/* Indices */}
           <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
