@@ -323,25 +323,6 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             <p className="-mt-2 px-1 text-xs italic text-muted-foreground">{reason}</p>
           )}
 
-          {/* Indices */}
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-            <div className="mb-4 flex items-center gap-2">
-              <Satellite className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">
-                {isSar ? "Радарни индекси" : "Спътникови индекси"}
-              </h3>
-            </div>
-            <div className="space-y-4">
-              <IndexBar value={ndmi} label={isSar ? "SAR влажност (VH/VV)" : "NDMI (влажност)"} />
-              {!isSar && <IndexBar value={ndvi} label="NDVI (вегетация)" />}
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {liveData
-                ? `Източник: ${liveData.source}`
-                : `Измерено от Sentinel-2, преди ${recordedAgo} ${recordedAgo === 1 ? "ден" : "дни"}`}
-            </p>
-          </div>
-
           {/* Phenophase timeline + dynamic Kc */}
           <PhenophaseTimeline
             parcelId={parcel.id}
