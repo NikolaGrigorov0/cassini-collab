@@ -634,7 +634,12 @@ function Dashboard() {
             ) : (
               <ul className="space-y-2">
                 {filteredParcels.map((p) => {
-                  const s = STATUS_COLORS[p.status];
+                  const watered = wateredToday[p.id];
+                  // When the user has logged irrigation today, override the (possibly
+                  // stale) red/yellow recommendation with green so the sidebar matches
+                  // the parcel detail panel's "вече е полято" view.
+                  const effectiveStatus: IrrigationStatus = watered ? "green" : p.status;
+                  const s = STATUS_COLORS[effectiveStatus];
                   const active = p.id === selectedId;
                   const da = deficitByParcel.get(p.id);
                   const ring = p.geometry?.coordinates?.[0] as [number, number][] | undefined;
@@ -715,10 +720,19 @@ function Dashboard() {
                         </div>
                         <div className="mt-2 flex flex-wrap items-center justify-between gap-1">
                           <div className="flex items-center gap-1">
-                            <span className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ backgroundColor: `${s.fill}20`, color: s.fill }}>
-                              {t(`status.${p.status}`)}
-                            </span>
-                            {deficitBadge && (
+                            {watered ? (
+                              <span
+                                className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700"
+                                title={`${t("dashboard.sidebar.wateredTodayLabel")} · ${new Date(watered.created_at).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}`}
+                              >
+                                {t("dashboard.sidebar.wateredToday")}
+                              </span>
+                            ) : (
+                              <span className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase" style={{ backgroundColor: `${s.fill}20`, color: s.fill }}>
+                                {t(`status.${effectiveStatus}`)}
+                              </span>
+                            )}
+                            {!watered && deficitBadge && (
                               <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase ${deficitBadge.cls}`}>
                                 {deficitBadge.text}
                               </span>
@@ -726,6 +740,7 @@ function Dashboard() {
                           </div>
                           <span className="text-sm font-bold" style={{ color: s.fill }}>
                             {(() => {
+                              if (watered) return "—";
                               const mm = da ? da.deficitDose : p.dose_mm;
                               const m3 = convertWater(mm, p.area_hectares).totalM3;
                               return `${m3.toFixed(1)} ${t("units.m3")}`;
