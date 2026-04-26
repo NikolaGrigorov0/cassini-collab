@@ -476,7 +476,7 @@ export function WateringLog({
                   minute: "2-digit",
                 });
                 const mm = ev.dose_mm ?? ev.amount_mm;
-                const liters = calculateLitersPerDecare(mm).toLocaleString("bg-BG");
+                const m3 = mm * areaDka;
                 const isManual = ev.method === "manual";
                 const sBefore = ev.status_before ? STATUS_EMOJI[ev.status_before] : null;
                 const sAfter = ev.status_after ? STATUS_EMOJI[ev.status_after] : null;
@@ -495,7 +495,7 @@ export function WateringLog({
                             {dateLbl}, {timeLbl}
                           </div>
                           <div className={`text-xs text-muted-foreground ${ev.undone ? "line-through" : ""}`}>
-                            {mm.toFixed(0)}мм · {liters} л/дка
+                            {fmtM3(m3)} · {mm.toFixed(1)} м³/дка
                           </div>
                           {(ev.ndmi_before != null && ev.ndmi_after != null) && (
                             <div className="mt-0.5 text-[11px] text-muted-foreground">
