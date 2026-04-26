@@ -287,6 +287,12 @@ export function WateringLog({
             Доза: {(todaysEvent.dose_mm ?? todaysEvent.amount_mm).toFixed(0)}мм ·{" "}
             {calculateLitersPerDecare(todaysEvent.dose_mm ?? todaysEvent.amount_mm).toLocaleString("bg-BG")} литра на декар
           </div>
+          {lastDynamicsReason && (
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
+              <span aria-hidden>ℹ️</span>
+              <span className="leading-snug">{lastDynamicsReason}</span>
+            </div>
+          )}
           <div className="mt-2 flex justify-end">
             {!confirmUndo ? (
               <button
