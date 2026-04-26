@@ -6,6 +6,15 @@ export interface ForecastDay {
   date: string;
   dose_mm: number;
   status: "green" | "yellow" | "red";
+  /** Daily ETo from Open-Meteo (mm/day). Optional: only present when the
+   *  pipeline returned full meteo fields (post-Sentinel pipeline does). */
+  eto_mm?: number;
+  /** Daily ETc = ETo × Kc (mm/day). Optional. */
+  etc_mm?: number;
+  /** Daily precipitation forecast (mm). Optional. */
+  rain_mm?: number;
+  /** Daily mean temperature (°C). Optional. */
+  temp_c?: number;
 }
 
 const DOW_BG = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
