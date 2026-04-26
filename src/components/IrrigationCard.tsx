@@ -391,7 +391,6 @@ export function IrrigationCard({
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>
                   <th className="px-2 py-1.5 text-left font-semibold">Ден</th>
-                  <th className="px-2 py-1.5 text-right font-semibold" title="Дневна изпарителна нужда (ETc)">Нужда</th>
                   <th className="px-2 py-1.5 text-right font-semibold">Дъжд</th>
                   <th className="px-2 py-1.5 text-right font-semibold" title="Препоръчана доза (включва натрупан дефицит)">Полей</th>
                 </tr>
@@ -401,11 +400,9 @@ export function IrrigationCard({
                   const dt = new Date(d.date);
                   const isToday = i === 0;
                   const label = isToday ? "Днес" : i === 1 ? "Утре" : DOW_BG[dt.getDay()];
-                  const need = d.etc_mm ?? d.eto_mm ?? 0;
                   return (
                     <tr key={d.date} className={isToday ? "bg-amber-50 font-semibold" : "border-t border-border/40"}>
                       <td className="px-2 py-1.5">{label}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{fmtM3(need * areaDka)}</td>
                       <td className="px-2 py-1.5 text-right font-mono">{fmtM3((d.rain_mm ?? 0) * areaDka)}</td>
                       <td className="px-2 py-1.5 text-right font-mono">{fmtM3(d.dose_mm * areaDka)}</td>
                     </tr>
@@ -413,7 +410,6 @@ export function IrrigationCard({
                 })}
                 <tr className="border-t-2 border-border bg-muted/30 font-semibold">
                   <td className="px-2 py-1.5">Общо</td>
-                  <td className="px-2 py-1.5 text-right font-mono">{fmtM3(totalNeed * areaDka)}</td>
                   <td className="px-2 py-1.5 text-right font-mono">{fmtM3(totalRainWk * areaDka)}</td>
                   <td className="px-2 py-1.5 text-right font-mono">{fmtM3(totalDose * areaDka)}</td>
                 </tr>
@@ -424,7 +420,7 @@ export function IrrigationCard({
               {weekPumpHrs !== null && <> · {formatHours(weekPumpHrs)} помпа</>}
             </div>
             <div className="border-t border-border bg-muted/20 px-2 py-2 text-[11px] text-muted-foreground">
-              ℹ️ <b>Нужда</b> = дневно изпарение (ETc). <b>Полей</b> = препоръчана доза, която може да е по-голяма ако почвата вече е изсъхнала и трябва да се навакса дефицит.
+              ℹ️ <b>Полей</b> = препоръчана доза, която може да е по-голяма ако почвата вече е изсъхнала и трябва да се навакса дефицит.
             </div>
           </div>
         )}
