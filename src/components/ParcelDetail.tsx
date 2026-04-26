@@ -388,18 +388,8 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             dataSource={liveData?.source ?? null}
           />
 
-          {/* Forecast */}
-          {liveData && liveData.forecast.length > 0 ? (
-            <ForecastChart forecast={liveData.forecast} source={liveData.source} areaHectares={parcel.area_hectares} />
-          ) : parcel.forecast.length > 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-              <div className="mb-3 flex items-center gap-2">
-                <CloudRain className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-semibold">7-дневна прогноза</h3>
-              </div>
-              <MockForecastChart data={parcel.forecast} areaHectares={parcel.area_hectares} />
-            </div>
-          ) : null}
+          {/* Forecast panel hidden — data still flows through IrrigationCard's
+              weekly table. Re-enable by restoring <ForecastChart /> here. */}
 
           {/* Savings */}
           <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-4">
