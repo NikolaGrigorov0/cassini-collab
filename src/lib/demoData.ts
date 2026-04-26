@@ -3,6 +3,13 @@
 // empty/seeded try-out dashboard.
 import type { MockParcel } from "@/lib/mockData";
 
+// Demo-only flag — surfaced in the sidebar chips to showcase the
+// "✓ Полято днес" badge that the real dashboard renders after the user
+// logs an irrigation event for the day.
+export const DEMO_WATERED_TODAY: Record<string, { time: string }> = {
+  d4: { time: "07:42" },
+};
+
 const mkPoly = (
   cx: number,
   cy: number,
@@ -34,7 +41,10 @@ export const DEMO_PARCELS: MockParcel[] = [
     geometry: mkPoly(27.825, 43.848),
     ndmi: -0.05,
     ndvi: 0.55,
-    dose_mm: 22,
+    // Daily dose (mm) — matches what IrrigationCard shows in the today box.
+    // Previously this was the 7-day total which made the sidebar number ≈4×
+    // bigger than the detail panel's "Полей" figure.
+    dose_mm: 5,
     status: "yellow",
     reason:
       "След 12 дни без дъжд NDMI пада. Полей умерено преди фаза наливане на зърното.",
@@ -74,7 +84,7 @@ export const DEMO_PARCELS: MockParcel[] = [
     geometry: mkPoly(27.808, 43.829),
     ndmi: -0.18,
     ndvi: 0.42,
-    dose_mm: 38,
+    dose_mm: 8,
     status: "red",
     reason:
       "Сериозен воден стрес засечен по NDMI. Незабавно поливане преди тасселиране.",
@@ -94,7 +104,7 @@ export const DEMO_PARCELS: MockParcel[] = [
     geometry: mkPoly(27.838, 43.858),
     ndmi: 0.12,
     ndvi: 0.61,
-    dose_mm: 12,
+    dose_mm: 3,
     status: "yellow",
     reason: "Леко напояване преди прибиране за качество на плода.",
     recorded_at: new Date(Date.now() - 3 * 86400000).toISOString(),
