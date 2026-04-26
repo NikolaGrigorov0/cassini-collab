@@ -219,5 +219,171 @@
   "languageSelector": {
     "title": "App language",
     "autoDetected": "Auto-detected"
+  },
+  "irrigationCard": {
+    "stressNone": "NO WATER STRESS",
+    "stressMild": "MODERATE WATER STRESS",
+    "stressHigh": "SEVERE WATER STRESS",
+    "todayBox": "Today",
+    "weekTotal": "Weekly total",
+    "perDecare": "per decare",
+    "wholeParcel": "for the whole field",
+    "pumpHours": "Pump runtime",
+    "rain7d": "Rain last 7 days",
+    "skipReason": "Skip irrigation — soil moisture is sufficient."
+  },
+  "growthPhase": {
+    "initial": "Initial",
+    "development": "Development",
+    "mid": "Mid",
+    "late": "Late",
+    "initialDur": "1-4 wks",
+    "developmentDur": "4-8 wks",
+    "midDur": "8-14 wks",
+    "lateDur": "14+ wks",
+    "current": "Current phase",
+    "change": "Change"
+  },
+  "waterBattery": {
+    "fullCap": "Full capacity",
+    "fullCapDesc": "Soil is at field capacity.",
+    "optimal": "Optimal moisture",
+    "optimalDesc": "Plant is not under stress.",
+    "soonWater": "Water soon",
+    "soonWaterDesc": "Moisture is dropping, plan irrigation.",
+    "waterNow": "Water now",
+    "waterNowDesc": "Below MAD threshold — risk zone.",
+    "wilting": "Wilting point",
+    "wiltingDesc": "Critical — severe crop stress."
+  },
+  "weather": {
+    "today": "Today",
+    "noCoords": "No coordinates",
+    "unavailable": "Forecast unavailable",
+    "dow": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ]
+  },
+  "soilInfo": {
+    "title": "Soil profile",
+    "phAcid": "Acidic",
+    "phWeakAcid": "Slightly acidic to neutral",
+    "phNeutral": "Neutral",
+    "phAlkaline": "Alkaline",
+    "socRich": "Rich in organic matter",
+    "socMedium": "Medium organic content",
+    "socLow": "Low organic content",
+    "loading": "Loading soil data…",
+    "errorRetry": "Retry"
+  },
+  "satellite": {
+    "noData": "no data",
+    "today": "today",
+    "yesterday": "yesterday",
+    "daysAgo": "{{n}} days ago",
+    "rateBad": "Bad",
+    "rateNormal": "Normal",
+    "rateGood": "Good"
+  },
+  "forecast": {
+    "today": "Today",
+    "sourceSentinel2": "Sentinel-2",
+    "sourceSentinel1": "Sentinel-1 SAR",
+    "sourceERA5": "ERA5 model",
+    "sourceComposite": "Composite"
+  },
+  "deficit": {
+    "back": "Back",
+    "title": "Optimal schedule under water deficit",
+    "modeActive": "⚡ Water deficit mode active",
+    "ofNormal": "% of normal",
+    "field": "Field",
+    "dayTotal": "Daily total",
+    "result": "Optimization result",
+    "needs": "Needs:",
+    "willGet": "Will get:",
+    "expectedLoss": "Expected loss:",
+    "stress": "Stress:",
+    "totalAlloc": "Total water allocated:",
+    "of": "of",
+    "available": "available",
+    "efficiency": "efficiency",
+    "totalYieldImpact": "Expected total yield reduction:",
+    "priorityCritical": "Critical",
+    "priorityImportant": "Important",
+    "priorityTolerable": "Tolerable",
+    "stressCritical": "Critical",
+    "stressHigh": "High",
+    "stressMedium": "Medium",
+    "stressLow": "Low",
+    "thousandShort": "k"
+  },
+  "deficitModal": {
+    "title": "Water deficit planning",
+    "description": "Enter how many m³ of water you have for the period — we will distribute it optimally across crops.",
+    "availableM3": "Available water (m³)",
+    "period": "Period",
+    "days3": "3 days",
+    "days7": "7 days",
+    "days14": "14 days",
+    "from": "From",
+    "to": "To",
+    "needed": "Needs for {{n}} days:",
+    "deficitMild": "Mild deficit",
+    "deficitMedium": "Medium deficit",
+    "deficitSevere": "Severe deficit",
+    "generate": "Generate schedule",
+    "cancel": "Cancel"
+  },
+  "parcelDetail2": {
+    "share": "Share recommendation",
+    "editShape": "Edit shape",
+    "delete": "Delete field",
+    "deleteTitle": "Delete \"{{name}}\"?",
+    "deleteDesc": "This action is irreversible. The field and all related satellite measurements and recommendations will be removed.",
+    "deleteCancel": "Cancel",
+    "deleteConfirm": "Delete",
+    "deleted": "Field deleted",
+    "deleteFailed": "Failed to delete",
+    "shareText": "HydroLand recommends: water field '{{name}}' with {{m3}} m³ this week (status: {{status}}). Analyzed by {{source}}."
+  },
+  "relTime": {
+    "justNow": "just now",
+    "minAgo": "{{n}}m ago",
+    "hoursAgo": "{{n}}h ago",
+    "dayAgo": "1 day ago",
+    "daysAgo": "{{n}} days ago",
+    "now": "now",
+    "tomorrow": "tomorrow",
+    "inHours": "in {{n}}h",
+    "inDays": "in {{n}} days"
+  },
+  "notif": {
+    "allMarkedRead": "All notifications marked as read",
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all as read"
+  },
+  "phenophase": {
+    "currentPhase": "Current phenophase",
+    "kc": "Crop coefficient (Kc)",
+    "manualOverride": "Manual override",
+    "auto": "Auto",
+    "resetAuto": "Reset to automatic",
+    "phaseChanged": "Phase changed manually",
+    "phaseAuto": "Reverted to automatic",
+    "loadError": "Failed to load phases"
+  },
+  "history": {
+    "title": "Field change history",
+    "open": "View history",
+    "empty": "No changes recorded yet",
+    "areaChange": "Area: {{old}} → {{new}} dka ({{delta}})"
   }
 }
