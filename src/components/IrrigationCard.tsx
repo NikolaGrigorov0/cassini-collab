@@ -8,7 +8,7 @@
 // All weekly volumes are PARCEL-level only — never region/watershed totals.
 
 import { useEffect, useState } from "react";
-import { Droplets, Calendar, ChevronDown, ChevronUp, CloudRain, CheckCircle2, Gauge, Zap } from "lucide-react";
+import { Droplets, Calendar, ChevronDown, ChevronUp, CloudRain, CheckCircle2, Gauge, Zap, Satellite, Radar, CloudOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { convertWater, formatHours, pumpRuntimeHours } from "@/lib/waterUnits";
 import type { ForecastDay } from "@/components/ForecastChart";
@@ -29,6 +29,10 @@ interface Props {
   source: DataSource | null;
   /** Last fetched timestamp (for the source line). */
   fetchedAt: Date | null;
+  /** Pipeline confidence percent (0-100). */
+  confidence?: number | null;
+  /** Cloud coverage percent (0-100) reported by Sentinel-2. */
+  cloudCoverage?: number | null;
 }
 
 function fmtM3(m3: number): string {
@@ -105,6 +109,8 @@ export function IrrigationCard({
   rain7dMm,
   source,
   fetchedAt,
+  confidence,
+  cloudCoverage,
 }: Props) {
   const [weeklyOpen, setWeeklyOpen] = useState(false);
   const [todayEvent, setTodayEvent] = useState<TodayEvent | null>(null);
@@ -200,6 +206,34 @@ export function IrrigationCard({
           {isWatered ? "ПОЛЯТО ДНЕС" : STATUS_LABEL[effectiveStatus]}
         </span>
       </div>
+
+      {/* Compact data-source badge — replaces standalone DataQualityBanner */}
+      {source && (
+        <div
+          className={`mt-2 flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${
+            source === "sentinel-2"
+              ? "border-green-200 bg-green-50 text-green-700"
+              : source === "sentinel-1-sar"
+                ? "border-blue-200 bg-blue-50 text-blue-700"
+                : "border-amber-200 bg-amber-50 text-amber-800"
+          }`}
+        >
+          {source === "sentinel-2" ? (
+            <Satellite className="h-3.5 w-3.5 shrink-0" />
+          ) : source === "sentinel-1-sar" ? (
+            <Radar className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <CloudOff className="h-3.5 w-3.5 shrink-0" />
+          )}
+          <span className="truncate">
+            {source === "sentinel-2"
+              ? `Sentinel-2 оптичен · точност ${confidence ?? 90}%`
+              : source === "sentinel-1-sar"
+                ? `Sentinel-1 радар · облачност ${cloudCoverage ?? 0}% · точност ${confidence ?? 75}%`
+                : `ERA5 модел · продължителна облачност · точност ${confidence ?? 65}%`}
+          </span>
+        </div>
+      )}
 
       {/* Urgent "polei dnes" banner */}
       {showUrgentBanner && (
