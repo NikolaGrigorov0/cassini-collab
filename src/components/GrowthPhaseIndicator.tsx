@@ -1,5 +1,4 @@
 import { Check, Info, Sprout } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -85,12 +84,12 @@ const KC: Record<CropType, Record<GrowthPhase, number>> = {
 interface Props {
   cropType: CropType;
   growthPhase: GrowthPhase;
+  /** Optional callback (kept for API compatibility, currently unused). */
   onChangePhase?: () => void;
 }
 
-export function GrowthPhaseIndicator({ cropType, growthPhase, onChangePhase }: Props) {
+export function GrowthPhaseIndicator({ cropType, growthPhase }: Props) {
   const currentIdx = PHASES.indexOf(growthPhase);
-  const isLate = growthPhase === "late";
   const kc = KC[cropType][growthPhase];
 
   return (
