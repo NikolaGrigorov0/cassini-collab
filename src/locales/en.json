@@ -242,7 +242,10 @@
     "midDur": "8-14 wks",
     "lateDur": "14+ wks",
     "current": "Current phase",
-    "change": "Change"
+    "change": "Change",
+    "title": "Growth phase",
+    "phaseSuffix": "phase",
+    "kcTooltip": "Crop water-use coefficient (FAO-56). Higher Kc = more water for this phase."
   },
   "waterBattery": {
     "fullCap": "Full capacity",
@@ -407,5 +410,27 @@
     "loggedNotif": "💧 Irrigation recorded —",
     "nextSatCheck": "📡 Next satellite check:",
     "history": "Irrigation history"
+  },
+  "waterNeed": {
+    "wheat_initial": "Low water need — root system developing",
+    "wheat_development": "Rising need — tillering and stem formation",
+    "wheat_mid": "High need — heading and grain filling",
+    "wheat_late": "Decreasing need — grain maturing",
+    "corn_initial": "Low need — emergence and early growth",
+    "corn_development": "Rising need — intensive vegetative growth",
+    "corn_mid": "Critical phase! Pollination and grain set",
+    "corn_late": "Decreasing need — maturing",
+    "tomatoes_initial": "Moderate need — seedling rooting",
+    "tomatoes_development": "Rising need — vegetative growth",
+    "tomatoes_mid": "High need! Flowering and fruit set",
+    "tomatoes_late": "Moderate need — fruit ripening",
+    "sunflower_initial": "Low need — emergence",
+    "sunflower_development": "Moderate need — leaf rosette",
+    "sunflower_mid": "High need — flowering and pollination",
+    "sunflower_late": "Low need — seed maturing",
+    "vineyard_initial": "Moderate need — bud break",
+    "vineyard_development": "Moderate need — flowering",
+    "vineyard_mid": "High need — berry growth",
+    "vineyard_late": "Low need — ripening and sugar accumulation"
   }
 }
