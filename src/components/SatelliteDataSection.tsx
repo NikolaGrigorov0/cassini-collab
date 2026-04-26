@@ -263,7 +263,6 @@ export function SatelliteDataSection({
   const moisturePct = ndmiToPct(ndmi, fcPct, wpPct);
   const ndmiR = ndmiRating(moisturePct);
   const ndviR = ndviRating(ndvi);
-  const moistR = moistureRating(moisturePct);
   const visibleSats = SATS.filter((s) => sources[s.key].used);
 
   return (
@@ -381,21 +380,24 @@ export function SatelliteDataSection({
               </p>
             </div>
 
-            {/* Moisture % */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">Влага (% ППВ)</span>
-                <span className="text-sm font-mono">
-                  {mode === "farmer" ? `${moistR.label} ${moistR.emoji}` : `${moisturePct.toFixed(0)}%`}
-                </span>
+            {/* Moisture % — hidden in farmer mode (unreliable until calibrated
+                against real soil FC/WP per parcel). Technical mode keeps it. */}
+            {mode === "technical" && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">Влага (% ППВ)</span>
+                  <span className="text-sm font-mono">{moisturePct.toFixed(0)}%</span>
+                </div>
+                <SemiGauge value={moisturePct} />
+                <p className="text-xs text-muted-foreground whitespace-pre-line">
+                  % of Field Water Capacity (ППВ){"\n"}
+                  Derived from NDMI using soil-specific{"\n"}
+                  FC and WP NDMI thresholds:{"\n"}
+                  pct = (NDMI - WP) / (FC - WP) × 100{"\n"}
+                  Thresholds vary by soil texture
+                </p>
               </div>
-              <SemiGauge value={moisturePct} />
-              <p className="text-xs text-muted-foreground whitespace-pre-line">
-                {mode === "farmer"
-                  ? moistR.hint
-                  : "% of Field Water Capacity (ППВ)\nDerived from NDMI using soil-specific\nFC and WP NDMI thresholds:\npct = (NDMI - WP) / (FC - WP) × 100\nThresholds vary by soil texture"}
-              </p>
-            </div>
+            )}
 
             {/* ETo — only technical */}
             {mode === "technical" && eto != null && (
