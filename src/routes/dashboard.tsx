@@ -468,12 +468,23 @@ function Dashboard() {
 
   // Per-parcel deficit allocation lookup
   const deficitByParcel = useMemo(() => {
-    const m = new Map<string, { deficitDose: number; normalDose: number; reductionPct: number; priority: string }>();
+    // The planner outputs total m³ for the whole period. The sidebar shows a
+    // daily figure, so we also derive a per-day m³ value here using the
+    // current deficit plan's day count.
+    const m = new Map<string, {
+      deficitM3Total: number;
+      deficitM3PerDay: number;
+      normalM3Total: number;
+      reductionPct: number;
+      priority: string;
+    }>();
     if (!deficitPlan) return m;
+    const dayCount = Math.max(1, deficitPlan.days.length);
     deficitPlan.allocations.forEach((a) => {
       m.set(a.parcel_id, {
-        deficitDose: a.deficitDose,
-        normalDose: a.normalDose,
+        deficitM3Total: a.deficitM3,
+        deficitM3PerDay: Math.round((a.deficitM3 / dayCount) * 10) / 10,
+        normalM3Total: a.normalM3,
         reductionPct: a.reductionPct,
         priority: a.priority,
       });
@@ -485,10 +496,16 @@ function Dashboard() {
 
   const handleGenerateDeficit = (
     plan: DeficitPlan,
-    params: { availablePct: number; dateFrom: Date; dateTo: Date; parcelIds: string[] },
+    params: { availableM3: number; availablePct: number; dateFrom: Date; dateTo: Date; parcelIds: string[] },
   ) => {
     setDeficitPlan(plan);
-    setDeficitParams(params);
+    // We only keep the legacy keys the rest of the file expects.
+    setDeficitParams({
+      availablePct: params.availablePct,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+      parcelIds: params.parcelIds,
+    });
     setDeficitModalOpen(false);
     setShowScheduleView(true);
     toast.success(t("dashboard.toasts.deficitGenerated"));
@@ -748,8 +765,11 @@ function Dashboard() {
                           <span className="text-sm font-bold" style={{ color: s.fill }}>
                             {(() => {
                               if (watered) return "—";
-                              const mm = da ? da.deficitDose : p.dose_mm;
-                              const m3 = convertWater(mm, p.area_hectares).totalM3;
+                              // Under deficit: show the per-day m³ allocation.
+                              // Without deficit: convert the daily mm dose to m³ using parcel area.
+                              const m3 = da
+                                ? da.deficitM3PerDay
+                                : convertWater(p.dose_mm, p.area_hectares).totalM3;
                               return `${m3.toFixed(1)} ${t("units.m3")}`;
                             })()}
                           </span>
