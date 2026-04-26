@@ -31,6 +31,11 @@ interface Props {
   fetchedAt: Date | null;
 }
 
+function fmtM3(m3: number): string {
+  if (m3 >= 1000) return `${(m3 / 1000).toFixed(1)}к м³`;
+  return `${m3.toFixed(1)} м³`;
+}
+
 const STATUS_LABEL: Record<Props["status"], string> = {
   green: "БЕЗ ВОДЕН СТРЕС",
   yellow: "УМЕРЕН ВОДЕН СТРЕС",
