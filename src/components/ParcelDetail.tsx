@@ -309,11 +309,9 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             rain7dMm={liveData?.rainfall_mm ?? 0}
             source={liveData?.source ?? null}
             fetchedAt={liveData?.fetchedAt ?? null}
+            confidence={liveData?.confidence ?? null}
+            cloudCoverage={liveData?.cloudCoverage ?? null}
           />
-          {/* Reason text from satellite pipeline */}
-          {reason && (
-            <p className="-mt-2 px-1 text-xs italic text-muted-foreground">{reason}</p>
-          )}
 
           {/* 7-day weather forecast (Open-Meteo) for this parcel */}
           <WeatherForecast geometry={parcel.geometry} />
