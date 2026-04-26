@@ -64,6 +64,7 @@ type RecRow = {
   status: string;
   dose_mm: number;
   reason: string;
+  forecast_json: unknown;
 };
 
 function Dashboard() {
