@@ -84,8 +84,9 @@ interface ParcelDetailProps {
 }
 
 function IndexBar({ value, label }: { value: number; label: string }) {
+  const { t } = useTranslation();
   const pct = ((value + 1) / 2) * 100;
-  const status = value < -0.1 ? "Лошо" : value < 0.25 ? "Нормално" : "Добро";
+  const status = value < -0.1 ? t("parcelDetail.indexBad") : value < 0.25 ? t("parcelDetail.indexNormal") : t("parcelDetail.indexGood");
   const statusColor =
     value < -0.1 ? "text-red-600" : value < 0.25 ? "text-amber-600" : "text-emerald-600";
   return (
@@ -98,7 +99,7 @@ function IndexBar({ value, label }: { value: number; label: string }) {
         <div className="absolute top-0 h-full w-1 -translate-x-1/2 rounded-full bg-foreground shadow-md" style={{ left: `${pct}%` }} />
       </div>
       <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-        <span>Лошо</span><span>Нормално</span><span>Добро</span>
+        <span>{t("parcelDetail.indexBad")}</span><span>{t("parcelDetail.indexNormal")}</span><span>{t("parcelDetail.indexGood")}</span>
       </div>
     </div>
   );
@@ -152,10 +153,15 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
         ? "Sentinel-2"
         : liveData.source === "sentinel-1-sar"
           ? "Sentinel-1 SAR"
-          : "ERA5 модел"
+          : t("parcelDetail.sourceEra5")
       : "Sentinel-2";
     const shareM3 = convertWater(dose, parcel.area_hectares).totalM3.toFixed(1);
-    const text = `HydroLand препоръчва: Полей нива '${parcel.name}' с ${shareM3} м³ тази седмица (статус: ${status.label.toLowerCase()}). Анализирано от ${sourceLbl}.`;
+    const text = t("parcelDetail.shareText", {
+      name: parcel.name,
+      m3: shareM3,
+      status: status.label.toLowerCase(),
+      source: sourceLbl,
+    });
     try {
       await navigator.clipboard.writeText(text);
       toast.success(t("parcelDetail.shareCopied"));
@@ -280,7 +286,7 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
           {loadingLive && (
             <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Зареждам последни спътникови данни…
+              {t("parcelDetail.loadingSat")}
             </div>
           )}
 
@@ -385,14 +391,14 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
 
           <Button onClick={handleShare} className="w-full" variant="outline" disabled={isEditing}>
             <Share2 className="mr-2 h-4 w-4" />
-            Сподели препоръката
+            {t("parcelDetail.share")}
           </Button>
 
           {/* Edit shape + history */}
           {onStartEdit && !isEditing && (
             <Button onClick={onStartEdit} className="w-full" variant="outline">
               <Pencil className="mr-2 h-4 w-4" />
-              Редактирай форма
+              {t("parcelDetail.editShape")}
             </Button>
           )}
           <ParcelHistoryDialog parcelId={parcel.id} parcelName={parcel.name} />
@@ -402,31 +408,31 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Изтрий парцела
+                  {t("parcelDetail.delete")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Изтриване на „{parcel.name}"?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("parcelDetail.deleteTitle", { name: parcel.name })}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Това действие е необратимо. Парцелът и свързаните спътникови измервания и препоръки ще бъдат премахнати.
+                    {t("parcelDetail.deleteDesc")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Отказ</AlertDialogCancel>
+                  <AlertDialogCancel>{t("parcelDetail.deleteCancel")}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={async () => {
                       try {
                         await onDelete(parcel.id);
-                        toast.success("Парцелът е изтрит");
+                        toast.success(t("parcelDetail.deleted"));
                         onClose();
                       } catch (e) {
-                        toast.error(e instanceof Error ? e.message : "Грешка при изтриването");
+                        toast.error(e instanceof Error ? e.message : t("parcelDetail.deleteFailed"));
                       }
                     }}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    Изтрий
+                    {t("parcelDetail.deleteConfirm")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

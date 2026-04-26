@@ -8,6 +8,7 @@
 // All weekly volumes are PARCEL-level only — never region/watershed totals.
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Droplets, Calendar, ChevronDown, ChevronUp, CloudRain, CheckCircle2, Gauge, Zap, Satellite, Radar, CloudOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { convertWater, formatHours, pumpRuntimeHours } from "@/lib/waterUnits";
@@ -40,11 +41,6 @@ function fmtM3(m3: number): string {
   return `${m3.toFixed(1)} м³`;
 }
 
-const STATUS_LABEL: Record<Props["status"], string> = {
-  green: "БЕЗ ВОДЕН СТРЕС",
-  yellow: "УМЕРЕН ВОДЕН СТРЕС",
-  red: "СИЛЕН ВОДЕН СТРЕС",
-};
 const STATUS_DOT: Record<Props["status"], string> = {
   green: "🟢",
   yellow: "🟡",
@@ -56,41 +52,9 @@ const STATUS_COLOR: Record<Props["status"], string> = {
   red: "#dc2626",
 };
 
-const SOURCE_LABEL: Record<DataSource, string> = {
-  "sentinel-2": "Sentinel-2",
-  "sentinel-1-sar": "Sentinel-1 (радар)",
-  "era5-model": "ERA5 модел",
-};
-
-const DOW_BG = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-
-function formatDateShort(iso: string): string {
+function formatDateShort(iso: string, locale: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("bg-BG", { day: "numeric", month: "short" });
-}
-
-function smartStatusText(
-  status: Props["status"],
-  rainToday: number,
-  hour: number,
-): string {
-  if (rainToday > 0) {
-    return `Валя днес ${rainToday.toFixed(1)}mm — изчакай почвата да поеме водата преди да решиш дали да поливаш.`;
-  }
-  // Morning < 12, afternoon 12-18, evening >= 18
-  if (hour < 12) {
-    if (status === "red") return "Полей преди обяд — следобед е по-горещо и водата се изпарява по-бързо.";
-    if (status === "yellow") return "Планирай поливане за днес или утре сутринта.";
-    return "Днес не е нужно поливане. Следи утре.";
-  }
-  if (hour < 18) {
-    if (status === "red") return "Полей вечерта — поливането в жегата губи вода от изпарение.";
-    if (status === "yellow") return "Полей довечера или утре сутринта рано.";
-    return "Всичко е наред за днес.";
-  }
-  if (status === "red") return "Полей сега или рано утре — нощното поливане е ефективно.";
-  if (status === "yellow") return "Можеш да полееш сега или утре сутринта.";
-  return "Готово за днес. Провери утре.";
+  return d.toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 interface TodayEvent {
@@ -112,6 +76,39 @@ export function IrrigationCard({
   confidence,
   cloudCoverage,
 }: Props) {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "bg" ? "bg-BG" : "en-US";
+  const STATUS_LABEL: Record<Props["status"], string> = {
+    green: t("irrigationCard.stressNone"),
+    yellow: t("irrigationCard.stressMild"),
+    red: t("irrigationCard.stressHigh"),
+  };
+  const SOURCE_LABEL: Record<DataSource, string> = {
+    "sentinel-2": t("forecast.sourceSentinel2"),
+    "sentinel-1-sar": t("forecast.sourceSentinel1"),
+    "era5-model": t("forecast.sourceERA5"),
+  };
+  const DOW = t("weather.dow", { returnObjects: true }) as string[];
+  const smartStatusText = (
+    s: Props["status"],
+    rainTodayMm: number,
+    hour: number,
+  ): string => {
+    if (rainTodayMm > 0) return t("irrigationCard.smart.rainNow", { mm: rainTodayMm.toFixed(1) });
+    if (hour < 12) {
+      if (s === "red") return t("irrigationCard.smart.morningRed");
+      if (s === "yellow") return t("irrigationCard.smart.morningYellow");
+      return t("irrigationCard.smart.morningGreen");
+    }
+    if (hour < 18) {
+      if (s === "red") return t("irrigationCard.smart.afternoonRed");
+      if (s === "yellow") return t("irrigationCard.smart.afternoonYellow");
+      return t("irrigationCard.smart.afternoonGreen");
+    }
+    if (s === "red") return t("irrigationCard.smart.eveningRed");
+    if (s === "yellow") return t("irrigationCard.smart.eveningYellow");
+    return t("irrigationCard.smart.eveningGreen");
+  };
   const [weeklyOpen, setWeeklyOpen] = useState(false);
   const [todayEvent, setTodayEvent] = useState<TodayEvent | null>(null);
 
@@ -192,7 +189,7 @@ export function IrrigationCard({
 
   // ----- Source line -----
   const sourceLabel = source ? SOURCE_LABEL[source] : "Sentinel-2";
-  const sourceDate = fetchedAt ? formatDateShort(fetchedAt.toISOString()) : "сега";
+  const sourceDate = fetchedAt ? formatDateShort(fetchedAt.toISOString(), locale) : t("irrigationCard.sourceNow");
 
   return (
     <div className={`rounded-2xl border-2 p-5 shadow-card ${cardBg}`}>
@@ -203,7 +200,7 @@ export function IrrigationCard({
           className="text-sm font-semibold uppercase tracking-wide"
           style={{ color: STATUS_COLOR[effectiveStatus] }}
         >
-          {isWatered ? "ПОЛЯТО ДНЕС" : STATUS_LABEL[effectiveStatus]}
+          {isWatered ? t("irrigationCard.wateredToday") : STATUS_LABEL[effectiveStatus]}
         </span>
       </div>
 
@@ -227,10 +224,10 @@ export function IrrigationCard({
           )}
           <span className="whitespace-normal leading-snug">
             {source === "sentinel-2"
-              ? `Sentinel-2 оптичен · точност ${confidence ?? 90}%`
+              ? t("irrigationCard.sourceSentinel2Acc", { pct: confidence ?? 90 })
               : source === "sentinel-1-sar"
-                ? `Sentinel-1 радар · облачност ${cloudCoverage ?? 0}% · точност ${confidence ?? 75}%`
-                : `ERA5 модел · продължителна облачност · точност ${confidence ?? 65}%`}
+                ? t("irrigationCard.sourceSarAcc", { cloud: cloudCoverage ?? 0, pct: confidence ?? 75 })
+                : t("irrigationCard.sourceEra5Acc", { pct: confidence ?? 65 })}
           </span>
         </div>
       )}
@@ -239,16 +236,17 @@ export function IrrigationCard({
       {showUrgentBanner && (
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-100/70 px-3 py-2 text-xs text-amber-900">
           <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>
-            Препоръчваме да полеете <b>днес</b> — утре нуждата ще е по-голяма (
-            <b>{fmtM3(tomorrowDose * areaDka)}</b>).
-          </span>
+          <span
+            dangerouslySetInnerHTML={{
+              __html: t("irrigationCard.urgentBanner", { m3: fmtM3(tomorrowDose * areaDka) }),
+            }}
+          />
         </div>
       )}
 
       {/* ДНЕС box */}
       <div className="mt-4">
-        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Днес</div>
+        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("irrigationCard.todayBox")}</div>
 
         {/* STATE 2 — Watered today */}
         {isWatered && (
@@ -257,13 +255,13 @@ export function IrrigationCard({
               <CheckCircle2 className="h-8 w-8 text-emerald-600" />
               <div>
                 <div className="text-lg font-bold text-emerald-700">
-                  Полято днес — {fmtM3(Number(todayEvent.dose_mm ?? todayEvent.amount_mm) * areaDka)}
+                  {t("irrigationCard.wateredTotal", { m3: fmtM3(Number(todayEvent.dose_mm ?? todayEvent.amount_mm) * areaDka) })}
                 </div>
                 <div className="mt-0.5 text-xs text-emerald-800">
-                  Следващо поливане:{" "}
+                  {t("irrigationCard.nextIrr")}{" "}
                   {tomorrowDose > 0
-                    ? `утре (~${fmtM3(tomorrowDose * areaDka)})`
-                    : nextNonZeroDay(forecast, areaDka)}
+                    ? t("irrigationCard.nextTomorrow", { m3: fmtM3(tomorrowDose * areaDka) })
+                    : nextNonZeroDay(forecast, areaDka, locale, t)}
                 </div>
               </div>
             </div>
@@ -276,11 +274,11 @@ export function IrrigationCard({
             <div className="flex items-center gap-3">
               <span className="text-3xl">💧✕</span>
               <div>
-                <div className="text-lg font-bold text-emerald-700">Днес не е нужно поливане</div>
+                <div className="text-lg font-bold text-emerald-700">{t("irrigationCard.noIrrToday")}</div>
                 <div className="mt-0.5 text-xs text-emerald-800">
                   {rainToday > 0
-                    ? `Дъждът покри нуждата (${rainToday.toFixed(1)}mm)`
-                    : `Влагата е достатъчна (${Math.round(moisturePct)}% ППВ)`}
+                    ? t("irrigationCard.rainCovered", { mm: rainToday.toFixed(1) })
+                    : t("irrigationCard.moistureSufficient", { pct: Math.round(moisturePct) })}
                 </div>
               </div>
             </div>
@@ -294,12 +292,12 @@ export function IrrigationCard({
               <span className="text-3xl">🌧️</span>
               <div>
                 <div className="text-lg font-bold text-blue-700">
-                  Очакван дъжд {rainToday.toFixed(1)}mm
+                  {t("irrigationCard.rainExpected", { mm: rainToday.toFixed(1) })}
                 </div>
                 <div className="mt-0.5 text-xs text-blue-800">
                   {rainToday >= etcToday
-                    ? "Не е нужно поливане днес"
-                    : `Полей ${fmtM3(doseToday * areaDka)} преди дъжда`}
+                    ? t("irrigationCard.noIrrRain")
+                    : t("irrigationCard.irrBeforeRain", { m3: fmtM3(doseToday * areaDka) })}
                 </div>
               </div>
             </div>
@@ -311,20 +309,20 @@ export function IrrigationCard({
           <div className="rounded-xl border border-amber-300 bg-white/60 p-4">
             <div className="flex items-baseline gap-2">
               <Droplets className="h-7 w-7 self-center" style={{ color: STATUS_COLOR[status] }} />
-              <span className="text-sm font-semibold text-foreground">Полей</span>
+              <span className="text-sm font-semibold text-foreground">{t("irrigationCard.water")}</span>
               <span className="text-4xl font-bold leading-none" style={{ color: STATUS_COLOR[status] }}>
                 {u.totalM3.toFixed(1)}
               </span>
-              <span className="text-xl font-medium text-muted-foreground">м³</span>
+              <span className="text-xl font-medium text-muted-foreground">{t("units.m3")}</span>
             </div>
             {pumpFlowM3h && pumpHrs !== null ? (
               <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Gauge className="h-3.5 w-3.5" />
-                ⏱ ~{formatHours(pumpHrs)} помпа ({pumpFlowM3h} м³/ч)
+                {t("irrigationCard.pumpLine", { hrs: formatHours(pumpHrs), flow: pumpFlowM3h })}
               </div>
             ) : (
               <div className="mt-2 text-[11px] text-muted-foreground">
-                💡 Добави дебит на помпата в настройките за да виждаш време за работа.
+                {t("irrigationCard.pumpHint")}
               </div>
             )}
           </div>
@@ -334,19 +332,18 @@ export function IrrigationCard({
         {!isWatered && !noNeed && (
           <div className="mt-3 space-y-1 text-xs text-muted-foreground">
             <div>
-              <b className="text-foreground">Защо:</b>{" "}
+              <b className="text-foreground">{t("irrigationCard.why")}</b>{" "}
               {rainToday > 0
-                ? `Дневна нужда ETc ${etcToday.toFixed(1)}mm − Дъжд ${rainToday.toFixed(1)}mm`
-                : `Дневна нужда ETc ${etcToday.toFixed(1)}mm · Без валежи`}
+                ? t("irrigationCard.whyWithRain", { etc: etcToday.toFixed(1), rain: rainToday.toFixed(1) })
+                : t("irrigationCard.whyNoRain", { etc: etcToday.toFixed(1) })}
             </div>
             {doseToday > Math.max(0, etcToday - rainToday) + 0.5 && (
               <div>
-                <b className="text-foreground">Защо повече от ETc:</b>{" "}
-                Почвата е суха ({Math.round(moisturePct)}% ППВ, NDMI {ndmi.toFixed(2)}) —
-                препоръката добавя вода за да покрие натрупания дефицит, не само днешната нужда.
+                <b className="text-foreground">{t("irrigationCard.whyMore")}</b>{" "}
+                {t("irrigationCard.whyMoreText", { pct: Math.round(moisturePct), ndmi: ndmi.toFixed(2) })}
               </div>
             )}
-            <div>NDMI: {ndmi.toFixed(2)} · {Math.round(moisturePct)}% ППВ</div>
+            <div>NDMI: {ndmi.toFixed(2)} · {Math.round(moisturePct)}%</div>
           </div>
         )}
       </div>
@@ -354,16 +351,16 @@ export function IrrigationCard({
       {/* УТРЕ preview */}
       {tomorrow && (
         <div className="mt-4 border-t border-border/60 pt-3">
-          <div className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Утре</div>
+          <div className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("irrigationCard.tomorrow")}</div>
           {tomorrowDose === 0 ? (
             <div className="text-sm">
-              ✓ Не се очаква нужда от поливане
-              {tomorrowRain > 0 && <span className="text-muted-foreground"> · 🌧️ Дъжд {fmtM3(tomorrowRain * areaDka)}</span>}
+              {t("irrigationCard.noTomorrowNeed")}
+              {tomorrowRain > 0 && <span className="text-muted-foreground"> · 🌧️ {t("irrigationCard.rainTomorrow", { m3: fmtM3(tomorrowRain * areaDka) })}</span>}
             </div>
           ) : (
             <div className="text-sm">
-              ⚠ Подгответе ~<b>{fmtM3(tomorrowDose * areaDka)}</b>
-              <span className="text-muted-foreground"> · {tomorrowDose.toFixed(1)} м³/дка</span>
+              <span dangerouslySetInnerHTML={{ __html: t("irrigationCard.prepare", { m3: `<b>${fmtM3(tomorrowDose * areaDka)}</b>` }) }} />
+              <span className="text-muted-foreground"> · {tomorrowDose.toFixed(1)} {t("irrigationCard.perDka")}</span>
             </div>
           )}
         </div>
@@ -381,7 +378,7 @@ export function IrrigationCard({
         >
           <span className="flex items-center gap-1.5">
             <CloudRain className="h-3.5 w-3.5" />
-            Седмична прогноза
+            {t("irrigationCard.weekly")}
           </span>
           {weeklyOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
@@ -390,16 +387,16 @@ export function IrrigationCard({
             <table className="w-full text-xs">
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>
-                  <th className="px-2 py-1.5 text-left font-semibold">Ден</th>
-                  <th className="px-2 py-1.5 text-right font-semibold">Дъжд</th>
-                  <th className="px-2 py-1.5 text-right font-semibold" title="Препоръчана доза (включва натрупан дефицит)">Полей</th>
+                  <th className="px-2 py-1.5 text-left font-semibold">{t("irrigationCard.day")}</th>
+                  <th className="px-2 py-1.5 text-right font-semibold">{t("irrigationCard.rain")}</th>
+                  <th className="px-2 py-1.5 text-right font-semibold">{t("irrigationCard.pour")}</th>
                 </tr>
               </thead>
               <tbody>
                 {week.map((d, i) => {
                   const dt = new Date(d.date);
                   const isToday = i === 0;
-                  const label = isToday ? "Днес" : i === 1 ? "Утре" : DOW_BG[dt.getDay()];
+                  const label = isToday ? t("irrigationCard.todayBox") : i === 1 ? t("irrigationCard.tomorrow") : DOW[dt.getDay()];
                   return (
                     <tr key={d.date} className={isToday ? "bg-amber-50 font-semibold" : "border-t border-border/40"}>
                       <td className="px-2 py-1.5">{label}</td>
@@ -409,18 +406,18 @@ export function IrrigationCard({
                   );
                 })}
                 <tr className="border-t-2 border-border bg-muted/30 font-semibold">
-                  <td className="px-2 py-1.5">Общо</td>
+                  <td className="px-2 py-1.5">{t("irrigationCard.total")}</td>
                   <td className="px-2 py-1.5 text-right font-mono">{fmtM3(totalRainWk * areaDka)}</td>
                   <td className="px-2 py-1.5 text-right font-mono">{fmtM3(totalDose * areaDka)}</td>
                 </tr>
               </tbody>
             </table>
             <div className="border-t border-border bg-primary/5 px-2 py-2 text-xs">
-              Общо за седмицата: <b>{weekTotalM3.toFixed(1)} м³</b> ({weekTotalM3PerDka.toFixed(1)} м³/дка)
-              {weekPumpHrs !== null && <> · {formatHours(weekPumpHrs)} помпа</>}
+              <span dangerouslySetInnerHTML={{ __html: t("irrigationCard.weekSum", { m3: `<b>${weekTotalM3.toFixed(1)}</b>`, perDka: weekTotalM3PerDka.toFixed(1) }) }} />
+              {weekPumpHrs !== null && <>{t("irrigationCard.pumpAppendix", { hrs: formatHours(weekPumpHrs) })}</>}
             </div>
             <div className="border-t border-border bg-muted/20 px-2 py-2 text-[11px] text-muted-foreground">
-              ℹ️ <b>Полей</b> = препоръчана доза, която може да е по-голяма ако почвата вече е изсъхнала и трябва да се навакса дефицит.
+              {t("irrigationCard.weekHint")}
             </div>
           </div>
         )}
@@ -429,20 +426,25 @@ export function IrrigationCard({
       {/* Source line */}
       <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <Calendar className="h-3 w-3" />
-        📡 {sourceLabel} · {sourceDate} · Дъжд (7 дни): {rain7dMm.toFixed(1)}mm
+        {t("irrigationCard.sourceLine", { src: sourceLabel, date: sourceDate, rain: rain7dMm.toFixed(1) })}
       </div>
     </div>
   );
 }
 
-function nextNonZeroDay(forecast: ForecastDay[], areaDka: number): string {
+function nextNonZeroDay(
+  forecast: ForecastDay[],
+  areaDka: number,
+  locale: string,
+  t: (k: string) => string,
+): string {
   for (let i = 1; i < forecast.length; i++) {
     if ((forecast[i]?.dose_mm ?? 0) > 0) {
       const d = new Date(forecast[i].date);
       const m3 = forecast[i].dose_mm * areaDka;
       const m3Str = m3 >= 1000 ? `${(m3 / 1000).toFixed(1)}к м³` : `${m3.toFixed(1)} м³`;
-      return `${d.toLocaleDateString("bg-BG", { day: "numeric", month: "short" })} (~${m3Str})`;
+      return `${d.toLocaleDateString(locale, { day: "numeric", month: "short" })} (~${m3Str})`;
     }
   }
-  return "тази седмица не се очаква";
+  return t("irrigationCard.nextWeekNone");
 }
