@@ -189,33 +189,8 @@ export function GrowthPhaseIndicator({ cropType, growthPhase, onChangePhase }: P
         </div>
       </div>
 
-      {/* PART 4: Phase change reminder */}
-      {!isLate ? (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-          <span className="mt-0.5">📅</span>
-          <div className="flex-1">
-            <p>
-              Не забравяй да обновиш фазата на растеж когато културата премине в
-              следващия етап — това влияе на препоръките за напояване.
-            </p>
-            {onChangePhase && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 h-7 border-amber-300 bg-white text-xs text-amber-900 hover:bg-amber-100 dark:bg-amber-900/40"
-                onClick={onChangePhase}
-              >
-                Смени фазата →
-              </Button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
-          <Check className="h-4 w-4" />
-          <span>✓ Финална фаза — подготовка за прибиране на реколтата.</span>
-        </div>
-      )}
+      {/* PART 4 hidden — phase is auto-derived from sowing date; manual change
+          is available via parcel edit. */}
     </div>
   );
 }
