@@ -385,5 +385,27 @@
     "open": "View history",
     "empty": "No changes recorded yet",
     "areaChange": "Area: {{old}} → {{new}} dka ({{delta}})"
+  },
+  "wateringLog": {
+    "logToday": "💧 I watered today",
+    "watered": "Watered today at",
+    "dose": "Dose",
+    "perDka": "m³/dka",
+    "undo": "Undo",
+    "undoConfirm": "Are you sure? Data will revert to before the irrigation.",
+    "undoYes": "Yes, undo",
+    "undoSuccess": "↩ Irrigation undone successfully",
+    "undoError": "Failed to undo",
+    "askVolume": "How many m³ did you water? (total for the field)",
+    "depth": "mm depth",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "saved": "Saved",
+    "saveError": "Failed to save",
+    "invalidVolume": "Enter a valid amount in m³",
+    "manualNote": "Manual log via \"I watered today\"",
+    "loggedNotif": "💧 Irrigation recorded —",
+    "nextSatCheck": "📡 Next satellite check:",
+    "history": "Irrigation history"
   }
 }
