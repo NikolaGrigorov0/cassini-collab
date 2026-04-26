@@ -109,6 +109,8 @@ export function IrrigationCard({
   rain7dMm,
   source,
   fetchedAt,
+  confidence,
+  cloudCoverage,
 }: Props) {
   const [weeklyOpen, setWeeklyOpen] = useState(false);
   const [todayEvent, setTodayEvent] = useState<TodayEvent | null>(null);
