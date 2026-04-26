@@ -98,6 +98,8 @@
       "fullDose": "Пълна доза",
       "skipped": "Пропуска се",
       "reduced": "Намалена",
+      "wateredToday": "✓ Полято днес",
+      "wateredTodayLabel": "Полято днес",
       "stats": "Статистика",
       "totalParcels": "Общо парцели",
       "savedWater": "Спестена вода",
