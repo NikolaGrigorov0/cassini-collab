@@ -24,7 +24,6 @@ import { PhenophaseTimeline } from "@/components/PhenophaseTimeline";
 import { GrowthPhaseIndicator } from "@/components/GrowthPhaseIndicator";
 import { QuickIrrigationActions } from "@/components/QuickIrrigationActions";
 import { WateringLog } from "@/components/WateringLog";
-import { SoilBalanceChart } from "@/components/SoilBalanceChart";
 import { ParcelHistoryDialog } from "@/components/ParcelHistoryDialog";
 import { WeatherForecast } from "@/components/WeatherForecast";
 import { SoilInfoCard } from "@/components/SoilInfoCard";
@@ -360,13 +359,6 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             growthPhase={parcel.growth_phase}
             soilType={parcel.soil_type ?? null}
             onIrrigationChange={onIrrigationChange}
-          />
-
-          {/* Soil moisture balance trend (auto-updated daily by cron) */}
-          <SoilBalanceChart
-            parcelId={parcel.id}
-            cropType={parcel.crop_type}
-            growthPhase={parcel.growth_phase}
           />
 
           {/* ISRIC SoilGrids — soil type, pH, organic carbon, retention */}
