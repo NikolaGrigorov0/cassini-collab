@@ -12,7 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import {
-  calculateLitersPerDecare,
   formatNextCheck,
   nextCheckDate,
   recalculateAfterIrrigation,
@@ -33,6 +32,8 @@ interface Props {
   currentStatus?: "green" | "yellow" | "red";
   /** Soil type label from ISRIC enrichment (drives soil-aware NDMI lift). */
   soilType?: string | null;
+  /** Parcel area in hectares — used to convert m³ ⇄ mm for the input UI. */
+  areaHectares?: number;
   /** Called after a successful confirm/undo so the parent can patch its
    *  liveData (dose, status, reason, NDMI, forecast) and the UI reflects
    *  the new soil-moisture state immediately. */
@@ -67,6 +68,12 @@ interface IrrigationRow {
 const MIN_MM = 1;
 const MAX_MM = 200;
 
+/** Format a m³ total nicely (e.g. 1.2к м³ for >= 1000). */
+function fmtM3(m3: number): string {
+  if (m3 >= 1000) return `${(m3 / 1000).toFixed(1)}к м³`;
+  return `${m3.toFixed(1)} м³`;
+}
+
 const STATUS_EMOJI: Record<string, string> = {
   green: "🟢",
   yellow: "🟡",
@@ -82,11 +89,21 @@ export function WateringLog({
   recommendedDoseMM,
   currentStatus,
   soilType,
+  areaHectares,
   onIrrigationChange,
 }: Props) {
-  const defaultDose = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
+  // Input is in m³ (total for the parcel). 1mm × 1дка = 1m³, so m³ = mm × area_ha × 10.
+  const areaDka = areaHectares && areaHectares > 0 ? areaHectares * 10 : 1;
+  const defaultDoseMM = Math.max(MIN_MM, Math.round(recommendedDoseMM || 15));
+  const defaultDoseM3 = Math.max(1, Math.round(defaultDoseMM * areaDka));
+  // Step size for +/- buttons: 5 m³/дка equivalent.
+  const stepM3 = Math.max(1, Math.round(5 * areaDka));
+  const minM3 = Math.max(1, Math.round(MIN_MM * areaDka));
+  const maxM3 = Math.round(MAX_MM * areaDka);
   const [open, setOpen] = useState(false);
-  const [dose, setDose] = useState<number>(defaultDose);
+  const [doseM3, setDoseM3] = useState<number>(defaultDoseM3);
+  // Derived mm dose used for DB + correction calculations.
+  const dose = doseM3 / areaDka;
   const [saving, setSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<IrrigationRow[]>([]);
@@ -122,17 +139,17 @@ export function WateringLog({
   }, [loadHistory]);
 
   const startEdit = () => {
-    setDose(defaultDose);
+    setDoseM3(defaultDoseM3);
     setOpen(true);
   };
 
   const adjust = (delta: number) => {
-    setDose((d) => Math.min(MAX_MM, Math.max(MIN_MM, d + delta)));
+    setDoseM3((d) => Math.min(maxM3, Math.max(minM3, d + delta)));
   };
 
   const confirm = async () => {
     if (!Number.isFinite(dose) || dose <= 0) {
-      toast.error("Въведи валидна доза в мм");
+      toast.error("Въведи валидно количество в м³");
       return;
     }
     setSaving(true);
@@ -183,7 +200,7 @@ export function WateringLog({
 
       await createNotification({
         title: `💧 Записано напояване — ${parcelName}`,
-        body: `${dose} мм. ${correction.newReason}`,
+        body: `${fmtM3(doseM3)}. ${correction.newReason}`,
         kind: "irrigation",
         parcel_id: parcelId,
       });
@@ -284,8 +301,11 @@ export function WateringLog({
             </span>
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Доза: {(todaysEvent.dose_mm ?? todaysEvent.amount_mm).toFixed(0)}мм ·{" "}
-            {calculateLitersPerDecare(todaysEvent.dose_mm ?? todaysEvent.amount_mm).toLocaleString("bg-BG")} литра на декар
+            {(() => {
+              const mm = todaysEvent.dose_mm ?? todaysEvent.amount_mm;
+              const m3 = mm * areaDka;
+              return `Доза: ${fmtM3(m3)} (${mm.toFixed(1)} м³/дка)`;
+            })()}
           </div>
           {lastDynamicsReason && (
             <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
@@ -344,7 +364,7 @@ export function WateringLog({
         /* INLINE FORM */
         <div className="rounded-xl border-2 border-blue-300 bg-blue-50/60 p-4 dark:border-blue-800 dark:bg-blue-950/30 animate-in fade-in slide-in-from-top-1">
           <label className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-            Колко мм напои?
+            Колко м³ напои? (общо за парцела)
           </label>
           <div className="mt-2 flex items-center gap-2">
             <Button
@@ -352,8 +372,8 @@ export function WateringLog({
               variant="outline"
               size="icon"
               className="shrink-0"
-              onClick={() => adjust(-5)}
-              disabled={saving || dose <= MIN_MM}
+              onClick={() => adjust(-stepM3)}
+              disabled={saving || doseM3 <= minM3}
             >
               <Minus className="h-4 w-4" />
             </Button>
@@ -361,33 +381,34 @@ export function WateringLog({
               type="number"
               inputMode="decimal"
               step="1"
-              min={MIN_MM}
-              max={MAX_MM}
-              value={dose}
+              min={minM3}
+              max={maxM3}
+              value={doseM3}
               onChange={(e) => {
                 const v = Number(e.target.value);
-                if (Number.isFinite(v)) setDose(Math.min(MAX_MM, Math.max(MIN_MM, v)));
+                if (Number.isFinite(v)) setDoseM3(Math.min(maxM3, Math.max(minM3, v)));
               }}
               className="text-center text-lg font-bold"
             />
-            <span className="font-mono text-sm text-muted-foreground">мм</span>
+            <span className="font-mono text-sm text-muted-foreground">м³</span>
             <Button
               type="button"
               variant="outline"
               size="icon"
               className="shrink-0"
-              onClick={() => adjust(5)}
-              disabled={saving || dose >= MAX_MM}
+              onClick={() => adjust(stepM3)}
+              disabled={saving || doseM3 >= maxM3}
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {dose}mm ≈{" "}
+            {fmtM3(doseM3)} ≈{" "}
             <span className="font-semibold text-foreground">
-              {calculateLitersPerDecare(dose).toLocaleString("bg-BG")} литра
-            </span>{" "}
-            на декар
+              {dose.toFixed(1)} м³/дка
+            </span>
+            {" · "}
+            {dose.toFixed(1)} мм дълбочина
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Button
@@ -454,7 +475,7 @@ export function WateringLog({
                   minute: "2-digit",
                 });
                 const mm = ev.dose_mm ?? ev.amount_mm;
-                const liters = calculateLitersPerDecare(mm).toLocaleString("bg-BG");
+                const m3 = mm * areaDka;
                 const isManual = ev.method === "manual";
                 const sBefore = ev.status_before ? STATUS_EMOJI[ev.status_before] : null;
                 const sAfter = ev.status_after ? STATUS_EMOJI[ev.status_after] : null;
@@ -473,7 +494,7 @@ export function WateringLog({
                             {dateLbl}, {timeLbl}
                           </div>
                           <div className={`text-xs text-muted-foreground ${ev.undone ? "line-through" : ""}`}>
-                            {mm.toFixed(0)}мм · {liters} л/дка
+                            {fmtM3(m3)} · {mm.toFixed(1)} м³/дка
                           </div>
                           {(ev.ndmi_before != null && ev.ndmi_after != null) && (
                             <div className="mt-0.5 text-[11px] text-muted-foreground">
