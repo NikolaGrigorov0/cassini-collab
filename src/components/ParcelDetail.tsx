@@ -362,13 +362,6 @@ export function ParcelDetail({ parcel, onClose, liveData, loadingLive, onDelete,
             onIrrigationChange={onIrrigationChange}
           />
 
-          {/* Soil moisture balance trend (auto-updated daily by cron) */}
-          <SoilBalanceChart
-            parcelId={parcel.id}
-            cropType={parcel.crop_type}
-            growthPhase={parcel.growth_phase}
-          />
-
           {/* ISRIC SoilGrids — soil type, pH, organic carbon, retention */}
           <SoilInfoCard
             soilType={parcel.soil_type}
